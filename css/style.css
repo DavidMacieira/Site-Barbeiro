@@ -14,7 +14,7 @@
   --text-gray: #b6bdb9;
   --pure-white: #f4f6f5;
 
-  --gold-accent: blue; /* verde profundo quase invisível */
+  --gold-accent: rgb(0, 210, 0); /* verde profundo quase invisível */
 
   --success: #4caf50;
   --error: #f44336;
