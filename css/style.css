@@ -193,7 +193,7 @@ nav .container {
 
 /* Header/Hero */
 header {
-  background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.9)), 
+  background: linear-gradient(rgba(124, 124, 124, 0.85), rgba(0, 0, 0, 0.9)), 
               url('../img/PHOTO-2025-12-29-15-51-33.jpg');
   background-size: cover;
   background-position: center;
