@@ -14,7 +14,7 @@
   --text-gray: #b6bdb9;
   --pure-white: #f4f6f5;
 
-  --gold-accent: rgb(0, 210, 0); /* verde profundo quase invisível */
+  --gold-accent: #1B98E0; /* verde profundo quase invisível */
 
   --success: #4caf50;
   --error: #f44336;
@@ -193,7 +193,7 @@ nav .container {
 
 /* Header/Hero */
 header {
-  background: linear-gradient(rgba(255, 252, 252, 0.85), rgba(0, 0, 0, 0.9)), 
+  background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.9)), 
               url('../img/PHOTO-2025-12-29-15-51-33.jpg');
   background-size: cover;
   background-position: center;
