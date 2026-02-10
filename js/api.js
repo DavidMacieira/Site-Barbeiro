@@ -1,7 +1,7 @@
 // api.js - SISTEMA COMPLETO PARA BARBEARIA REAL
 
-// SUA URL DA API (a mesma que já tem)
-const API_URL = 'https://script.google.com/macros/s/AKfycbywUe-IiumFosW68XvlV3QBYoK3FPddKXxoEv5l0u3GIc10Q0u-pBHw8IjtaHBkTA50uw/exec';
+
+const API_URL = 'https://script.google.com/macros/s/AKfycbz0XP1u_ZvO_alVSnEuhtSnmddqqnUcRMyAwOz-b7sjjqWX7ZRtRR85_nAoqcZeUr-6/exec';
 
 // Credenciais admin
 const ADMIN_CREDENTIALS = {
@@ -16,13 +16,24 @@ class BarbeariaAPI {
   }
 
   // ==================== FUNÇÕES PÚBLICAS ====================
-
-  async testConnection() {
+async testConnection() {
     try {
-      const response = await fetch(`${this.API_URL}?action=test`);
-      return await response.json();
+      // Usamos o modo 'cors' e explicitamente 'follow' para o redirecionamento 302
+      const response = await fetch(`${this.API_URL}?action=test`, {
+        method: 'GET',
+        mode: 'cors',
+        redirect: 'follow', 
+        cache: 'no-cache'
+      });
+      
+      if (!response.ok) throw new Error('Servidor respondeu com erro');
+      
+      const data = await response.json();
+      return data;
     } catch (error) {
-      console.error('❌ Erro conexão:', error);
+      console.error('❌ Erro na conexão:', error);
+      // Se der erro de CORS aqui, o script ainda pode estar a funcionar, 
+      // mas o navegador impede a leitura da resposta.
       return { success: false, error: error.message };
     }
   }
@@ -58,42 +69,28 @@ class BarbeariaAPI {
 
   async saveBooking(bookingData) {
     try {
-      console.log('💾 Salvando reserva REAL:', bookingData);
+    console.log('💾 Salvando reserva REAL:', bookingData);
       
-      // Última verificação
-      const availability = await this.checkAvailability(
-        bookingData.date,
-        bookingData.time,
-        bookingData.duration
-      );
-      
-      if (!availability.available) {
-        return {
-          success: false,
-          error: '❌ Este horário já foi reservado! Por favor, escolha outro.'
-        };
-      }
-      
-      // Enviar para API (POST com JSON)
-      const response = await fetch(`${this.API_URL}?action=saveBooking`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bookingData)
-      });
-      
-      const result = await response.json();
-      console.log('Resultado API:', result);
-      
-      return result;
-      
-    } catch (error) {
-      console.error('❌ Erro grave saveBooking:', error);
-      return {
-        success: false,
-        error: 'Erro de conexão. Tente novamente.'
-      };
-    }
+    const response = await fetch(`${this.API_URL}?action=saveBooking`, {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 
+        'Content-Type': 'text/plain' // **MUDAR para text/plain**
+      },
+      body: JSON.stringify(bookingData)
+    });
+    const result = await response.json();
+    console.log('Resultado API:', result);
+    
+    return result;
+  } catch (error) {
+    console.error('❌ Erro grave saveBooking:', error);
+    return {
+      success: false,
+      error: 'Erro de conexão. Tente novamente.'
+    };
   }
+}
 
   async getServices() {
     try {
@@ -153,29 +150,40 @@ class BarbeariaAPI {
     return { success: true };
   }
 
-  async getBookings(filters = {}) {
-    try {
-      let url = `${this.API_URL}?action=getBookings`;
-      
-      if (filters.date) url += `&date=${filters.date}`;
-      if (filters.status) url += `&status=${filters.status}`;
-      if (filters.startDate) url += `&startDate=${filters.startDate}`;
-      if (filters.endDate) url += `&endDate=${filters.endDate}`;
-      
-      console.log('📋 Buscando reservas:', url);
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      if (data.success && data.bookings) {
-        return data.bookings;
-      }
-      return [];
-      
-    } catch (error) {
-      console.error('Erro getBookings:', error);
-      return [];
+async getBookings(filters = {}) {
+  try {
+    // **CORRIGIR A CONSTRUÇÃO DA URL**
+    const params = new URLSearchParams();
+    params.append('action', 'getBookings');
+    
+    if (filters.date) params.append('date', filters.date);
+    if (filters.status) params.append('status', filters.status);
+    
+    const url = `${this.API_URL}?${params.toString()}`;
+    console.log('📋 Buscando reservas:', url);
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    // **DEBUG: Log dos dados recebidos**
+    console.log('📊 Dados recebidos:', data);
+    
+    if (data.success && data.bookings) {
+      return data.bookings;
     }
+    
+    // **SE NÃO HOUVER bookings, tentar buscar diretamente**
+    if (data.success && Array.isArray(data)) {
+      return data;
+    }
+    
+    return [];
+    
+  } catch (error) {
+    console.error('Erro getBookings:', error);
+    return [];
   }
+}
 
   async getTodayBookings() {
     const today = new Date().toISOString().split('T')[0];
@@ -187,7 +195,7 @@ class BarbeariaAPI {
       console.log(`🔄 Atualizando ${bookingId} para ${status}`);
       const response = await fetch(`${this.API_URL}?action=updateBookingStatus`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ bookingId, status })
       });
       
@@ -203,7 +211,7 @@ class BarbeariaAPI {
       console.log(`🗑️ Apagando reserva ${bookingId}`);
       const response = await fetch(`${this.API_URL}?action=deleteBooking`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ bookingId })
       });
       
@@ -240,7 +248,7 @@ class BarbeariaAPI {
     try {
       const response = await fetch(`${this.API_URL}?action=saveSettings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(settingsData)
       });
       
@@ -266,7 +274,7 @@ class BarbeariaAPI {
     try {
       const response = await fetch(`${this.API_URL}?action=addBlockedDate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(dateData)
       });
       
@@ -281,7 +289,7 @@ class BarbeariaAPI {
     try {
       const response = await fetch(`${this.API_URL}?action=removeBlockedDate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ dateId })
       });
       

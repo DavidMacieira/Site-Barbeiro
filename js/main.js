@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // Configurar serviço
+  /*
   const serviceSelect = document.getElementById('serviceSelect');
   if (serviceSelect) {
     serviceSelect.addEventListener('change', loadAvailableTimeSlots);
@@ -43,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Também adicionar onclick via atributo
     newConfirmBtn.setAttribute('onclick', 'confirmBooking()');
   }
-  
+  */
   // Ano atual no footer
   document.getElementById('currentYear').textContent = new Date().getFullYear();
   
@@ -251,7 +252,7 @@ async function confirmBooking() {
     
     if (result && result.success) {
       // SUCESSO!
-      showToast(`✅ Reserva #${result.reserva_id} confirmada!`, 'success');
+      showToast('✅ Reserva confirmada com sucesso!', 'success');
       
       // Obter configurações do WhatsApp
       const settings = await barbeariaAPI.getSettings();
@@ -270,13 +271,10 @@ async function confirmBooking() {
       const message = `✅ NOVA MARCAÇÃO - Barbearia João Angeiras
 
 👤 Cliente: ${name}
-📱 Telefone: ${phone}
 ✂️ Serviço: ${serviceName}
 💰 Preço: ${servicePrice}€
-⏱ Duração: ${serviceDuration} min
 📅 Data: ${formattedDate}
 🕐 Horário: ${time}
-🆔 ID Reserva: ${result.reserva_id}
 📍 Local: R. de 31 de Janeiro 183, Póvoa de Varzim
 
 Por favor, confirme esta marcação respondendo SIM.
