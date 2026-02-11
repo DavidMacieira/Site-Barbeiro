@@ -3,31 +3,89 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Meta Tags SEO -->
+  <meta name="description" content="Barbearia João Angeiras - Cortes profissionais em Póvoa de Varzim. Marque online seu horário com os melhores barbeiros da região.">
+  <meta name="keywords" content="barbearia, póvoa de varzim, corte de cabelo, barba, grooming, joão angeiras">
+  <meta name="author" content="João Angeiras Barbearia">
+  <meta name="robots" content="index, follow">
+  
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" content="João Angeiras - Barbearia Profissional">
+  <meta property="og:description" content="Estilo, precisão e tradição em cada corte. Marque online seu horário.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://joaoangeiras.com">
+  <meta property="og:image" content="img/logo.jpg">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  
+  <!-- Preconnect para performance -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  
+  <!-- Estilos -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-  <title>João Angeiras - Barbearia Profissional</title>
   <link rel="stylesheet" href="css/style.css">
+  
+  <title>João Angeiras - Barbearia Profissional | Póvoa de Varzim</title>
+  
+  <!-- Schema.org Local Business -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "HairSalon",
+    "name": "Barbearia João Angeiras",
+    "image": "img/logo.jpg",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "R. de 31 de Janeiro 183",
+      "addressLocality": "Póvoa de Varzim",
+      "postalCode": "4490-533",
+      "addressCountry": "PT"
+    },
+    "telephone": "+351918749689",
+    "priceRange": "€€",
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        "opens": "09:00",
+        "closes": "19:00"
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
   <!-- Navbar -->
-  <nav>
+  <nav role="navigation" aria-label="Menu principal">
     <div class="container">
-      <a href="#" class="logo">JOÃO <span>ANGEIRAS</span></a>
-      <button class="mobile-menu-btn" id="mobileMenuBtn">
+      <a href="#" class="logo" aria-label="João Angeiras - Página inicial">
+        JOÃO <span>ANGEIRAS</span>
+      </a>
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menu de navegação" aria-expanded="false">
         <i class="fas fa-bars"></i>
       </button>
-      <div class="nav-links" id="navLinks">
-        <a href="#servicos">Serviços</a>
-        <a href="#galeria">Galeria</a>
-        <a href="#contato">Contacto</a>
-        <button class="btn" onclick="openBookingModal()">Marcar Agora</button>
-        <button class="btn btn-secondary" onclick="openAdminModal()">Área Barbeiro</button>
+      <div class="nav-links" id="navLinks" role="menubar">
+        <a href="#servicos" role="menuitem">Serviços</a>
+        <a href="#galeria" role="menuitem">Galeria</a>
+        <a href="#contato" role="menuitem">Contacto</a>
+        <button class="btn" onclick="openBookingModal()" aria-label="Abrir formulário de marcação">
+          Marcar Agora
+        </button>
+        <button class="btn btn-secondary" onclick="openAdminModal()" aria-label="Área do barbeiro">
+          Área Barbeiro
+        </button>
       </div>
     </div>
   </nav>
 
   <!-- Header/Hero -->
-  <header>
+  <header role="banner">
     <div class="hero-content">
       <h1>Barbearia João Angeiras</h1>
       <p>Estilo, precisão e tradição em cada corte. Marque online seu horário na Póvoa de Varzim.</p>
@@ -36,77 +94,82 @@
     </div>
   </header>
 
-
   <!-- Serviços -->
-  <section id="servicos">
+  <section id="servicos" aria-labelledby="servicos-title">
     <div class="container">
-      <h2 class="section-title">Nossos Serviços</h2>
-      <div class="services-grid">
-        <div class="service-card">
-          <div class="service-icon">
+      <h2 class="section-title" id="servicos-title">Nossos Serviços</h2>
+      <div class="services-grid" role="list">
+        <article class="service-card" role="listitem">
+          <div class="service-icon" aria-hidden="true">
             <i class="fas fa-cut"></i>
           </div>
           <h3>Corte de Cabelo</h3>
           <p>Corte profissional com técnicas modernas.</p>
-          <div class="service-price">11€</div>
-          <div class="service-time"><i class="fas fa-clock"></i> 30 min</div>
-          <button class="btn" onclick="openBookingModal('Corte de Cabelo', 11, 30)">Marcar</button>
-        </div>
+          <div class="service-price" aria-label="Preço: 11 euros">11€</div>
+          <div class="service-time"><i class="fas fa-clock" aria-hidden="true"></i> 30 min</div>
+          <button class="btn" onclick="openBookingModal('Corte de Cabelo', 11, 30)" aria-label="Marcar corte de cabelo">
+            Marcar
+          </button>
+        </article>
 
-        <div class="service-card">
-          <div class="service-icon">
+        <article class="service-card" role="listitem">
+          <div class="service-icon" aria-hidden="true">
             <i class="fas fa-user-check"></i>
           </div>
           <h3>Barba</h3>
           <p>Tratamento completo para barba.</p>
-          <div class="service-price">5€</div>
-          <div class="service-time"><i class="fas fa-clock"></i> 20 min</div>
-          <button class="btn" onclick="openBookingModal('Barba', 5, 20)">Marcar</button>
-        </div>
+          <div class="service-price" aria-label="Preço: 5 euros">5€</div>
+          <div class="service-time"><i class="fas fa-clock" aria-hidden="true"></i> 20 min</div>
+          <button class="btn" onclick="openBookingModal('Barba', 5, 20)" aria-label="Marcar tratamento de barba">
+            Marcar
+          </button>
+        </article>
 
-        <div class="service-card">
-          <div class="service-icon">
+        <article class="service-card" role="listitem">
+          <div class="service-icon" aria-hidden="true">
             <i class="fas fa-crown"></i>
           </div>
           <h3>Corte + Barba</h3>
           <p>Pacote completo para um visual renovado.</p>
-          <div class="service-price">15€</div>
-          <div class="service-time"><i class="fas fa-clock"></i> 50 min</div>
-          <button class="btn" onclick="openBookingModal('Corte + Barba', 15, 50)">Marcar</button>
-        </div>
+          <div class="service-price" aria-label="Preço: 15 euros">15€</div>
+          <div class="service-time"><i class="fas fa-clock" aria-hidden="true"></i> 50 min</div>
+          <button class="btn" onclick="openBookingModal('Corte + Barba', 15, 50)" aria-label="Marcar pacote completo">
+            Marcar
+          </button>
+        </article>
       </div>
     </div>
   </section>
 
   <!-- Galeria -->
-  <section id="galeria">
+  <section id="galeria" aria-labelledby="galeria-title">
     <div class="container">
-      <h2 class="section-title">Galeria</h2>
-      <div class="gallery-grid">
-        <div class="gallery-item">
-          <img src="img/image0 (1).jpeg" alt="Corte de Cabelo">
-        </div>
-        <div class="gallery-item">
-          <img src="img/image1.jpeg" alt="Corte de Cabelo">
-        </div>
-        <div class="gallery-item">
-          <img src="img/image2.jpeg" alt="Corte de Cabelo">
-        </div>
-        <div class="gallery-item">
-          <img src="img/image3.jpeg" alt="Corte de Cabelo">
-        </div>
+      <h2 class="section-title" id="galeria-title">Galeria</h2>
+      <div class="gallery-grid" role="list">
+        <figure class="gallery-item" role="listitem">
+          <img src="img/image0 (1).jpeg" alt="Exemplo de corte de cabelo realizado na barbearia" loading="lazy">
+        </figure>
+        <figure class="gallery-item" role="listitem">
+          <img src="img/image1.jpeg" alt="Cliente satisfeito com corte degradê" loading="lazy">
+        </figure>
+        <figure class="gallery-item" role="listitem">
+          <img src="img/image2.jpeg" alt="Tratamento profissional de barba" loading="lazy">
+        </figure>
+        <figure class="gallery-item" role="listitem">
+          <img src="img/image3.jpeg" alt="Ambiente moderno da barbearia" loading="lazy">
+        </figure>
       </div>
     </div>
   </section>
 
   <!-- Contato -->
-  <section id="contato">
+  <section id="contato" aria-labelledby="contato-title">
     <div class="container">
-      <h2 class="section-title">Contacto e Localização</h2>
+      <h2 class="section-title" id="contato-title">Contacto e Localização</h2>
       <div class="contact-wrapper">
         <div class="contact-info">
           <div class="contact-item">
-            <div class="contact-icon">
+            <div class="contact-icon" aria-hidden="true">
               <i class="fas fa-location-dot"></i>
             </div>
             <div class="contact-text">
@@ -116,17 +179,17 @@
           </div>
 
           <div class="contact-item">
-            <div class="contact-icon">
+            <div class="contact-icon" aria-hidden="true">
               <i class="fas fa-phone"></i>
             </div>
             <div class="contact-text">
               <h4>Telefone</h4>
-              <p>918 749 689</p>
+              <p><a href="tel:+351918749689" aria-label="Ligar para 918 749 689">918 749 689</a></p>
             </div>
           </div>
 
           <div class="contact-item">
-            <div class="contact-icon">
+            <div class="contact-icon" aria-hidden="true">
               <i class="fas fa-clock"></i>
             </div>
             <div class="contact-text">
@@ -137,121 +200,187 @@
           </div>
 
           <div class="contact-item">
-            <div class="contact-icon">
+            <div class="contact-icon" aria-hidden="true">
               <i class="fab fa-instagram"></i>
             </div>
             <div class="contact-text">
               <h4>Instagram</h4>
-              <p>@j.angeiras</p>
+              <p><a href="https://instagram.com/j.angeiras" target="_blank" rel="noopener noreferrer">@j.angeiras</a></p>
             </div>
           </div>
 
-          <div class="social-links">
-            <a href="https://instagram.com/j.angeiras" target="_blank">
+          <div class="social-links" role="navigation" aria-label="Redes sociais">
+            <a href="https://instagram.com/j.angeiras" target="_blank" rel="noopener noreferrer" aria-label="Seguir no Instagram">
               <i class="fab fa-instagram"></i>
             </a>
-            <a href="tel:+351918749689">
+            <a href="tel:+351918749689" aria-label="Ligar agora">
               <i class="fas fa-phone"></i>
             </a>
-            <a href="https://wa.me/351919241169" target="_blank">
+            <a href="https://wa.me/351919241169" target="_blank" rel="noopener noreferrer" aria-label="Enviar mensagem WhatsApp">
               <i class="fab fa-whatsapp"></i>
             </a>
-            <a href="https://maps.google.com/?q=R.+de+31+de+Janeiro+183,+4490-533+Póvoa+de+Varzim" target="_blank">
+            <a href="https://maps.google.com/?q=R.+de+31+de+Janeiro+183,+4490-533+Póvoa+de+Varzim" target="_blank" rel="noopener noreferrer" aria-label="Ver no Google Maps">
               <i class="fas fa-map-marker-alt"></i>
             </a>
           </div>
         </div>
 
         <div class="map-container">
-          <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2990.390245761615!2d-8.761722284320462!3d41.44417897925871!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd24449ecb6a9c9d%3A0x8d3c00c5b5a4e4b0!2sR.%20de%2031%20de%20Janeiro%20183%2C%204490-533%20P%C3%B3voa%20de%20Varzim!5e0!3m2!1spt-PT!2spt!4v1649788392348!5m2!1spt-PT!2spt" allowfullscreen="" loading="lazy"></iframe>
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2990.390245761615!2d-8.761722284320462!3d41.44417897925871!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd24449ecb6a9c9d%3A0x8d3c00c5b5a4e4b0!2sR.%20de%2031%20de%20Janeiro%20183%2C%204490-533%20P%C3%B3voa%20de%20Varzim!5e0!3m2!1spt-PT!2spt!4v1649788392348!5m2!1spt-PT!2spt" 
+            allowfullscreen="" 
+            loading="lazy"
+            title="Localização da Barbearia João Angeiras no mapa"
+            aria-label="Mapa mostrando a localização da barbearia">
+          </iframe>
         </div>
       </div>
     </div>
   </section>
 
   <!-- Modal de Marcação -->
-  <div id="bookingModal" class="modal">
+  <div id="bookingModal" class="modal" role="dialog" aria-labelledby="modal-title" aria-modal="true">
     <div class="modal-content">
-      <span class="close" onclick="closeBookingModal()">&times;</span>
-      <h2><i class="fas fa-calendar-check"></i> Fazer Marcação</h2>
+      <button class="close" onclick="closeBookingModal()" aria-label="Fechar modal">&times;</button>
+      <h2 id="modal-title"><i class="fas fa-calendar-check" aria-hidden="true"></i> Fazer Marcação</h2>
       
-      <div class="form-group">
-        <label for="clientName">Seu Nome *</label>
-        <input type="text" id="clientName" placeholder="Digite seu nome" required>
-      </div>
+      <form id="bookingForm" aria-label="Formulário de marcação">
+        <div class="form-group">
+          <label for="clientName">Seu Nome *</label>
+          <input 
+            type="text" 
+            id="clientName" 
+            placeholder="Digite seu nome completo" 
+            required 
+            aria-required="true"
+            autocomplete="name"
+            minlength="3"
+            maxlength="50">
+          <span class="helper-text">Mínimo 3 caracteres</span>
+        </div>
 
-      <div class="form-group">
-        <label for="clientPhone">Telefone *</label>
-        <input type="tel" id="clientPhone" placeholder="912 345 678" required>
-      </div>
+        <div class="form-group">
+          <label for="clientPhone">Telefone *</label>
+          <input 
+            type="tel" 
+            id="clientPhone" 
+            placeholder="912 345 678" 
+            required 
+            aria-required="true"
+            autocomplete="tel"
+            pattern="[0-9]{3}\s[0-9]{3}\s[0-9]{3}">
+          <span class="helper-text">Formato: 912 345 678 (9 dígitos)</span>
+        </div>
 
-      <div class="form-group">
-        <label for="serviceSelect">Serviço *</label>
-        <select id="serviceSelect" required>
-          <option value="">Selecione um serviço</option>
-          <option value="Corte de Cabelo|11|30">Corte de Cabelo - 11€ (30 min)</option>
-          <option value="Barba|5|20">Barba - 5€ (20 min)</option>
-          <option value="Corte + Barba|15|50">Corte + Barba - 15€ (50 min)</option>
-        </select>
-      </div>
+        <div class="form-group">
+          <label for="serviceSelect">Serviço *</label>
+          <select id="serviceSelect" required aria-required="true">
+            <option value="">Selecione um serviço</option>
+            <option value="Corte de Cabelo|11|30">Corte de Cabelo - 11€ (30 min)</option>
+            <option value="Barba|5|20">Barba - 5€ (20 min)</option>
+            <option value="Corte + Barba|15|50">Corte + Barba - 15€ (50 min)</option>
+          </select>
+        </div>
 
-      <div class="form-group">
-        <label for="bookingDate">Data Preferida *</label>
-        <input type="date" id="bookingDate" required>
-      </div>
+        <div class="form-group">
+          <label for="bookingDate">Data Preferida *</label>
+          <input 
+            type="date" 
+            id="bookingDate" 
+            required 
+            aria-required="true">
+          <span class="helper-text">Selecione uma data a partir de hoje</span>
+        </div>
 
-      <div class="form-group">
-        <label for="bookingTime">Horário Preferido *</label>
-        <select id="bookingTime" required disabled>
-          <option value="">Selecione um horário</option>
-        </select>
-      </div>
+        <div class="form-group">
+          <label for="bookingTime">Horário Preferido *</label>
+          <select id="bookingTime" required aria-required="true" disabled>
+            <option value="">Selecione um horário</option>
+          </select>
+        </div>
 
-      <div id="loadingSlots" style="display: none;">
-        <p><i class="fas fa-spinner fa-spin"></i> Carregando horários disponíveis...</p>
-      </div>
+        <div id="loadingSlots" style="display: none;" role="status" aria-live="polite">
+          <p><i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Carregando horários disponíveis...</p>
+        </div>
 
-      <div id="noSlots" style="display: none; color: #d4af37;">
-        <p><i class="fas fa-calendar-times"></i> Não há horários disponíveis nesta data.</p>
-      </div>
+        <div id="noSlots" style="display: none; color: #d4af37;" role="alert">
+          <p><i class="fas fa-calendar-times" aria-hidden="true"></i> Não há horários disponíveis nesta data.</p>
+        </div>
 
-      <div id="availableTimes" class="time-slots-container" style="display: none;"></div>
-<button class="btn whatsapp-btn" id="confirmBookingBtn" onclick="confirmBooking()">
-  <i class="fab fa-whatsapp"></i> Confirmar Marcação
-</button>
+        <div id="availableTimes" class="time-slots-container" style="display: none;" role="radiogroup" aria-label="Horários disponíveis"></div>
+
+        <!-- 🔥 NOVO: Checkbox Lembrar Dados -->
+        <div class="form-group" style="margin-top: 20px;">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+            <input 
+              type="checkbox" 
+              id="rememberMe" 
+              style="width: auto; cursor: pointer;"
+              aria-label="Lembrar meus dados para próxima visita">
+            <span style="font-size: 0.9rem; color: var(--text-gray);">
+              <i class="fas fa-save" style="color: var(--gold-accent);"></i> 
+              Lembrar meus dados para próxima visita
+            </span>
+          </label>
+        </div>
+
+        <button 
+          type="button"
+          class="btn whatsapp-btn" 
+          id="confirmBookingBtn" 
+          onclick="confirmBooking()"
+          aria-label="Confirmar marcação via WhatsApp">
+          <i class="fab fa-whatsapp" aria-hidden="true"></i> Confirmar Marcação
+        </button>
+      </form>
     </div>
   </div>
 
   <!-- Modal de Login Admin -->
-  <div id="adminModal" class="modal">
+  <div id="adminModal" class="modal" role="dialog" aria-labelledby="admin-modal-title" aria-modal="true">
     <div class="modal-content">
-      <span class="close" onclick="closeAdminModal()">&times;</span>
-      <h2><i class="fas fa-lock"></i> Área do Barbeiro</h2>
+      <button class="close" onclick="closeAdminModal()" aria-label="Fechar modal">&times;</button>
+      <h2 id="admin-modal-title"><i class="fas fa-lock" aria-hidden="true"></i> Área do Barbeiro</h2>
       
-      <div class="form-group">
-        <label for="adminEmail">Email</label>
-        <input type="email" id="adminEmail" placeholder="admin@barbearia.com" value="admin@barbearia.com">
-      </div>
+      <form id="adminLoginForm" aria-label="Formulário de login">
+        <div class="form-group">
+          <label for="adminEmail">Email</label>
+          <input 
+            type="email" 
+            id="adminEmail" 
+            placeholder="admin@barbearia.com" 
+            value="admin@barbearia.com"
+            autocomplete="email"
+            aria-label="Email de acesso">
+        </div>
 
-      <div class="form-group">
-        <label for="adminPassword">Password</label>
-        <input type="password" id="adminPassword" placeholder="********" value="admin123">
-      </div>
+        <div class="form-group">
+          <label for="adminPassword">Password</label>
+          <input 
+            type="password" 
+            id="adminPassword" 
+            placeholder="********" 
+            value="admin123"
+            autocomplete="current-password"
+            aria-label="Senha de acesso">
+        </div>
 
-      <button class="btn" onclick="loginAdmin()">Entrar</button>
-      
-      <div style="margin-top: 20px; padding: 15px; background: #1a1a1a; border-radius: 5px;">
-        <p style="color: #d4af37; margin: 0; font-size: 0.9rem;">
-          <i class="fas fa-info-circle"></i> Credenciais padrão: admin@barbearia.com / admin123
-        </p>
-      </div>
+        <button type="button" class="btn" onclick="loginAdmin()">Entrar</button>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #1a1a1a; border-radius: 5px;" role="note">
+          <p style="color: #d4af37; margin: 0; font-size: 0.9rem;">
+            <i class="fas fa-info-circle" aria-hidden="true"></i> Credenciais padrão: admin@barbearia.com / admin123
+          </p>
+        </div>
+      </form>
     </div>
   </div>
 
-  <footer>
+  <!-- Footer -->
+  <footer role="contentinfo">
     <div class="container">
       <p>© <span id="currentYear"></span> João Angeiras Barbearia. Todos os direitos reservados.</p>
-      <p>Sistema desenvolvido por <a href="https://www.linkedin.com/in/david-macieira-5791a2321/" target="_blank">David Macieira</a></p>
+      <p>Sistema desenvolvido por <a href="https://www.linkedin.com/in/david-macieira-5791a2321/" target="_blank" rel="noopener noreferrer">David Macieira</a></p>
     </div>
   </footer>
 
