@@ -1,7 +1,7 @@
 // api.js - SISTEMA COMPLETO PARA BARBEARIA REAL
 
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbz0XP1u_ZvO_alVSnEuhtSnmddqqnUcRMyAwOz-b7sjjqWX7ZRtRR85_nAoqcZeUr-6/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxg3yBHc5abQ0_2ckXdW46kfbaQ1xpb01tJJcWfiPfVE-JYwpKqnr9nHOAucJNydrz-/exec';
 
 // Credenciais admin
 const ADMIN_CREDENTIALS = {
@@ -361,27 +361,271 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 });
 
-// Função global toast
-function showToast(message, type = 'info') {
-  if (typeof Toastify === 'undefined') {
-    alert(message);
-    return;
+// ==================== SISTEMA DE NOTIFICAÇÕES PROFISSIONAL ====================
+class NotificationSystem {
+  constructor() {
+    this.container = null;
+    this.notifications = [];
+    this.init();
   }
-  
-  const colors = {
-    success: '#4CAF50',
-    error: '#f44336',
-    warning: '#ff9800',
-    info: '#2196F3'
-  };
-  
-  Toastify({
-    text: message,
-    duration: 3000,
-    gravity: "top",
-    position: "right",
-    backgroundColor: colors[type] || '#333',
-    stopOnFocus: true,
-    style: { borderRadius: '4px' }
-  }).showToast();
+
+  init() {
+    // Criar container se não existir
+    if (!document.querySelector('.notification-container')) {
+      this.container = document.createElement('div');
+      this.container.className = 'notification-container';
+      document.body.appendChild(this.container);
+    } else {
+      this.container = document.querySelector('.notification-container');
+    }
+  }
+
+  /**
+   * Mostrar notificação
+   * @param {string} message - Mensagem principal
+   * @param {string} type - success, error, warning, info
+   * @param {Object} options - Opções adicionais
+   */
+  show(message, type = 'info', options = {}) {
+    const id = 'notification-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    const {
+      title = this.getTitleByType(type),
+      icon = this.getIconByType(type),
+      duration = 5000,
+      details = null,
+      actions = [],
+      booking = null
+    } = options;
+
+    const notification = document.createElement('div');
+    notification.id = id;
+    notification.className = `notification ${type} ${booking ? 'notification-booking' : ''}`;
+    
+    // Construir HTML base
+    let html = `
+      <div class="notification-icon">
+        <i class="${icon}"></i>
+      </div>
+      <div class="notification-content">
+        <div class="notification-title">
+          <span>${title}</span>
+        </div>
+        <div class="notification-message">${message}</div>
+    `;
+
+    // Adicionar detalhes da reserva
+    if (booking) {
+      html += `
+        <div class="booking-details">
+          <div class="booking-detail-item">
+            <i class="fas fa-user"></i>
+            <span>${booking.name || 'Cliente'}</span>
+          </div>
+          <div class="booking-detail-item">
+            <i class="fas fa-cut"></i>
+            <span>${booking.service || 'Serviço'}</span>
+          </div>
+          <div class="booking-detail-item">
+            <i class="fas fa-calendar"></i>
+            <span>${booking.date || ''}</span>
+          </div>
+          <div class="booking-detail-item">
+            <i class="fas fa-clock"></i>
+            <span>${booking.time || ''}</span>
+          </div>
+          <div class="booking-detail-item">
+            <i class="fas fa-euro-sign"></i>
+            <span>${booking.price || 0}€</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // Adicionar ações personalizadas
+    if (actions.length > 0) {
+      html += `<div class="booking-actions">`;
+      actions.forEach(action => {
+        html += `
+          <button class="${action.class || 'btn'}" onclick="${action.onclick}">
+            <i class="${action.icon}"></i> ${action.text}
+          </button>
+        `;
+      });
+      html += `</div>`;
+    }
+
+    // Adicionar timestamp e fechar
+    html += `
+        <div class="notification-time">
+          <i class="far fa-clock"></i>
+          <span>${this.getCurrentTime()}</span>
+        </div>
+      </div>
+      <button class="notification-close" onclick="notificationSystem.close('${id}')">
+        <i class="fas fa-times"></i>
+      </button>
+      <div class="notification-progress" style="animation-duration: ${duration}ms;"></div>
+    `;
+
+    notification.innerHTML = html;
+    this.container.appendChild(notification);
+
+    // Auto-remover após duração
+    const timeout = setTimeout(() => {
+      this.close(id);
+    }, duration);
+
+    // Armazenar notificação
+    this.notifications.push({ id, element: notification, timeout });
+
+    return id;
+  }
+
+  /**
+   * Fechar notificação específica
+   */
+  close(id) {
+    const notification = this.notifications.find(n => n.id === id);
+    if (notification) {
+      const element = notification.element;
+      clearTimeout(notification.timeout);
+      
+      element.classList.add('closing');
+      setTimeout(() => {
+        if (element.parentNode) {
+          element.remove();
+        }
+      }, 400);
+      
+      this.notifications = this.notifications.filter(n => n.id !== id);
+    }
+  }
+
+  /**
+   * Fechar todas as notificações
+   */
+  closeAll() {
+    this.notifications.forEach(n => {
+      this.close(n.id);
+    });
+  }
+
+  /**
+   * Notificação de sucesso para reserva
+   */
+  showBookingSuccess(bookingData, whatsappURL) {
+    const formattedDate = this.formatDate(bookingData.date);
+    
+    return this.show(
+      'Sua reserva foi confirmada com sucesso!',
+      'success',
+      {
+        title: '✅ RESERVA CONFIRMADA',
+        duration: 10000,
+        booking: {
+          name: bookingData.name,
+          service: bookingData.service,
+          date: formattedDate,
+          time: bookingData.time,
+          price: bookingData.price
+        },
+        actions: [
+          {
+            text: 'WhatsApp',
+            icon: 'fab fa-whatsapp',
+            class: 'btn-whatsapp',
+            onclick: `window.open('${whatsappURL}', '_blank')`
+          },
+          {
+            text: 'Adicionar ao Calendário',
+            icon: 'fas fa-calendar-plus',
+            class: 'btn-calendar',
+            onclick: `window.open('${this.generateCalendarURL(bookingData)}', '_blank')`
+          }
+        ]
+      }
+    );
+  }
+
+  /**
+   * Notificação de erro melhorada
+   */
+  showError(message, error = null) {
+    console.error('Erro:', error || message);
+    
+    return this.show(
+      message,
+      'error',
+      {
+        title: '❌ ERRO',
+        duration: 6000,
+        actions: [
+          {
+            text: 'Tentar Novamente',
+            icon: 'fas fa-redo',
+            class: 'btn',
+            onclick: 'window.location.reload()'
+          }
+        ]
+      }
+    );
+  }
+
+  // ========== FUNÇÕES AUXILIARES ==========
+  getTitleByType(type) {
+    const titles = {
+      success: '✅ SUCESSO',
+      error: '❌ ERRO',
+      warning: '⚠️ ATENÇÃO',
+      info: 'ℹ️ INFORMAÇÃO'
+    };
+    return titles[type] || 'NOTIFICAÇÃO';
+  }
+
+  getIconByType(type) {
+    const icons = {
+      success: 'fas fa-check-circle',
+      error: 'fas fa-exclamation-circle',
+      warning: 'fas fa-exclamation-triangle',
+      info: 'fas fa-info-circle'
+    };
+    return icons[type] || 'fas fa-bell';
+  }
+
+  getCurrentTime() {
+    const now = new Date();
+    return now.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  formatDate(dateStr) {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('pt-PT', {
+        weekday: 'short',
+        day: '2-digit',
+        month: '2-digit'
+      });
+    } catch {
+      return dateStr;
+    }
+  }
+
+  generateCalendarURL(booking) {
+    const startDate = new Date(`${booking.date}T${booking.time}`);
+    const endDate = new Date(startDate.getTime() + (booking.duration * 60000));
+    
+    const format = (date) => {
+      return date.toISOString().replace(/-|:|\.\d+/g, '');
+    };
+
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Barbearia%20-%20${encodeURIComponent(booking.service)}&dates=${format(startDate)}/${format(endDate)}&details=Cliente:%20${encodeURIComponent(booking.name)}%0ATelefone:%20${encodeURIComponent(booking.phone)}&location=R.%20de%2031%20de%20Janeiro%20183%2C%20Póvoa%20de%20Varzim`;
+  }
+}
+
+// Instância global
+window.notificationSystem = new NotificationSystem();
+
+// Função de compatibilidade com código antigo
+function showToast(message, type = 'info', options = {}) {
+  return notificationSystem.show(message, type, options);
 }

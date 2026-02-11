@@ -18,33 +18,6 @@ document.addEventListener('DOMContentLoaded', function() {
     bookingDate.addEventListener('change', loadAvailableTimeSlots);
   }
   
-  // Configurar serviço
-  /*
-  const serviceSelect = document.getElementById('serviceSelect');
-  if (serviceSelect) {
-    serviceSelect.addEventListener('change', loadAvailableTimeSlots);
-  }
-  
-  // Configurar botão de confirmação
-  const confirmBtn = document.getElementById('confirmBookingBtn');
-  if (confirmBtn) {
-    console.log('🔗 Botão de confirmação encontrado');
-    
-    // Remover event listeners antigos
-    const newConfirmBtn = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-    
-    // Adicionar novo listener
-    newConfirmBtn.addEventListener('click', function(e) {
-      console.log('🎯 CONFIRMAR CLICADO!');
-      e.preventDefault();
-      confirmBooking();
-    });
-    
-    // Também adicionar onclick via atributo
-    newConfirmBtn.setAttribute('onclick', 'confirmBooking()');
-  }
-  */
   // Ano atual no footer
   document.getElementById('currentYear').textContent = new Date().getFullYear();
   
@@ -178,7 +151,7 @@ function loginAdmin() {
   });
 }
 
-// ==================== FUNÇÃO PRINCIPAL DE RESERVA ====================
+// ==================== FUNÇÃO PRINCIPAL DE RESERVA ATUALIZADA ====================
 async function confirmBooking() {
   console.log('🎯 CONFIRMAR RESERVA CHAMADA!');
   
@@ -194,14 +167,21 @@ async function confirmBooking() {
     
     // VALIDAÇÃO BÁSICA
     if (!name || !phone || !service || !date || !time) {
-      showToast('❌ Por favor, preencha todos os campos!', 'error');
-      console.log('❌ Validação falhou: campos vazios');
+      notificationSystem.show(
+        'Por favor, preencha todos os campos para realizar sua reserva.',
+        'warning',
+        { title: '⚠️ CAMPOS INCOMPLETOS' }
+      );
       return;
     }
     
     // Validar telefone
     if (!validatePhone(phone)) {
-      showToast('❌ Número de telefone inválido! Use 9 dígitos.', 'error');
+      notificationSystem.show(
+        'O número de telefone deve ter 9 dígitos. Exemplo: 912 345 678',
+        'error',
+        { title: '📱 TELEFONE INVÁLIDO' }
+      );
       return;
     }
     
@@ -209,11 +189,13 @@ async function confirmBooking() {
     const [serviceName, servicePrice, serviceDuration] = service.split('|');
     
     if (!serviceName || !servicePrice || !serviceDuration) {
-      showToast('❌ Serviço inválido!', 'error');
+      notificationSystem.show(
+        'Serviço selecionado é inválido. Por favor, escolha novamente.',
+        'error',
+        { title: '✂️ SERVIÇO INVÁLIDO' }
+      );
       return;
     }
-    
-    console.log('🔍 Verificando disponibilidade...');
     
     // VERIFICAR DISPONIBILIDADE
     const availability = await barbeariaAPI.checkAvailability(
@@ -222,10 +204,15 @@ async function confirmBooking() {
       parseInt(serviceDuration)
     );
     
-    console.log('📊 Disponibilidade:', availability);
-    
     if (!availability || !availability.available) {
-      showToast('❌ Este horário já está ocupado! Escolha outro.', 'error');
+      notificationSystem.show(
+        'Este horário acabou de ser reservado por outro cliente. Por favor, selecione outro horário.',
+        'error',
+        { 
+          title: '⏰ HORÁRIO INDISPONÍVEL',
+          duration: 6000
+        }
+      );
       loadAvailableTimeSlots(); // Recarregar slots
       return;
     }
@@ -243,29 +230,14 @@ async function confirmBooking() {
       notes: 'Reserva via site oficial'
     };
     
-    console.log('📤 Enviando reserva para API...', bookingData);
-    
     // SALVAR RESERVA
     const result = await barbeariaAPI.saveBooking(bookingData);
     
-    console.log('📩 Resultado API:', result);
-    
     if (result && result.success) {
-      // SUCESSO!
-      showToast('✅ Reserva confirmada com sucesso!', 'success');
-      
       // Obter configurações do WhatsApp
       const settings = await barbeariaAPI.getSettings();
       const whatsappNumber = settings.whatsapp?.number || '+351919241169';
-      
-      // Formatar data
-      const dateObj = new Date(date);
-      const formattedDate = dateObj.toLocaleDateString('pt-PT', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      });
+      const cleanNumber = whatsappNumber.replace(/\D/g, '');
       
       // Criar mensagem
       const message = `✅ NOVA MARCAÇÃO - Barbearia João Angeiras
@@ -273,43 +245,59 @@ async function confirmBooking() {
 👤 Cliente: ${name}
 ✂️ Serviço: ${serviceName}
 💰 Preço: ${servicePrice}€
-📅 Data: ${formattedDate}
+📅 Data: ${new Date(date).toLocaleDateString('pt-PT')}
 🕐 Horário: ${time}
 📍 Local: R. de 31 de Janeiro 183, Póvoa de Varzim
 
 Por favor, confirme esta marcação respondendo SIM.
-O cliente será contactado para confirmação final.
-
-Obrigado! ✂️`;
+O cliente será contactado para confirmação final.`;
       
-      // Criar link do WhatsApp
-      const cleanNumber = whatsappNumber.replace(/\D/g, '');
       const whatsappURL = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
+      
+      // NOTIFICAÇÃO PROFISSIONAL DE SUCESSO!
+      notificationSystem.showBookingSuccess(
+        {
+          ...bookingData,
+          date: date,
+          time: time
+        },
+        whatsappURL
+      );
       
       // Fechar modal
       closeBookingModal();
-      
-      // Abrir WhatsApp após 1 segundo
-      setTimeout(() => {
-        window.open(whatsappURL, '_blank');
-      }, 1000);
       
       // Limpar formulário
       setTimeout(() => {
         document.getElementById('clientName').value = '';
         document.getElementById('clientPhone').value = '';
+        document.getElementById('serviceSelect').value = '';
+        document.getElementById('bookingTime').innerHTML = '<option value="">Selecione um horário</option>';
       }, 500);
       
+      // Feedback adicional sonoro (opcional)
+      try {
+        const audio = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3');
+        audio.volume = 0.3;
+        audio.play().catch(e => console.log('🔇 Autoplay bloqueado'));
+      } catch (e) {
+        console.log('🔇 Áudio não suportado');
+      }
+      
     } else {
-      // ERRO
       const errorMsg = result?.error || 'Erro desconhecido ao salvar reserva';
-      showToast(`❌ ${errorMsg}`, 'error');
-      console.error('❌ Erro na reserva:', result);
+      notificationSystem.showError(
+        'Não foi possível concluir sua reserva. Por favor, tente novamente.',
+        { message: errorMsg }
+      );
     }
     
   } catch (error) {
     console.error('💥 ERRO CRÍTICO em confirmBooking:', error);
-    showToast('❌ Erro no sistema. Tente novamente.', 'error');
+    notificationSystem.showError(
+      'Ocorreu um erro inesperado. Nossa equipe já foi notificada.',
+      error
+    );
   }
 }
 
@@ -332,7 +320,6 @@ async function loadAvailableTimeSlots() {
   
   const [serviceName, servicePrice, serviceDuration] = service.split('|');
   
-  // Mostrar loading
   const loadingEl = document.getElementById('loadingSlots');
   const noSlotsEl = document.getElementById('noSlots');
   const availableEl = document.getElementById('availableTimes');
@@ -343,7 +330,6 @@ async function loadAvailableTimeSlots() {
   if (availableEl) availableEl.style.display = 'none';
   if (timeSelect) timeSelect.disabled = true;
   
-  // VALIDAÇÃO DE HORA: Verificar se é hoje
   const now = new Date();
   const bookingDate = document.getElementById('bookingDate');
   const isToday = bookingDate.value === now.toISOString().split('T')[0];
@@ -355,86 +341,87 @@ async function loadAvailableTimeSlots() {
     
     if (loadingEl) loadingEl.style.display = 'none';
     
-    // Processar resultado (pode vir como array ou objeto com success)
-    let slots = Array.isArray(result) ? result : (result?.slots || result);
+    let slots = Array.isArray(result) ? result : (result?.slots || []);
     
-    // Se não houver slots
     if (!slots || slots.length === 0) {
       if (noSlotsEl) noSlotsEl.style.display = 'block';
-      if (timeSelect) {
-        timeSelect.innerHTML = '<option value="">Nenhum horário disponível</option>';
-        timeSelect.disabled = true;
-      }
       return;
     }
-    
-    // FILTRAR slots para não mostrar horas que já passaram se for HOJE
+
+    // 🔥 Normalizar formato (se vier string, transforma em objeto)
+    slots = slots.map(slot => {
+      if (typeof slot === 'string') {
+        return { time: slot, available: true };
+      }
+      return slot;
+    });
+
+    // ✅ FILTRAR HORAS PASSADAS (usando slot.time)
     const validSlots = slots.filter(slot => {
       if (!isToday) return true;
-      const [hours, minutes] = slot.split(':').map(Number);
+      const [hours, minutes] = slot.time.split(':').map(Number);
       const slotMinutes = (hours * 60) + minutes;
-      return slotMinutes > (currentMinutes + 15); // +15 min de margem para o cliente chegar
+      return slotMinutes > (currentMinutes + 15);
     });
-    
-    console.log('✅ Slots válidos após filtro:', validSlots);
-    
-    // Se não houver slots após o filtro
+
     if (validSlots.length === 0) {
       if (noSlotsEl) noSlotsEl.style.display = 'block';
-      if (timeSelect) {
-        timeSelect.innerHTML = '<option value="">Nenhum horário disponível</option>';
-        timeSelect.disabled = true;
-      }
       return;
     }
-    
-    // Renderizar slots válidos
+
     if (availableEl) availableEl.style.display = 'block';
-    
-    // Atualizar select
+
     if (timeSelect) {
       timeSelect.innerHTML = '<option value="">Selecione um horário</option>';
-      validSlots.forEach(slot => {
-        const option = document.createElement('option');
-        option.value = slot;
-        option.textContent = slot;
-        timeSelect.appendChild(option);
-      });
       timeSelect.disabled = false;
     }
-    
-    // Atualizar botões
-    if (availableEl) {
-      availableEl.innerHTML = '';
-      validSlots.forEach(slot => {
-        const button = document.createElement('button');
-        button.type = 'button';
+
+    availableEl.innerHTML = '';
+
+    validSlots.forEach(slot => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = slot.time;
+
+      if (slot.available === false) {
+        button.className = 'time-slot busy';
+        button.disabled = true;
+        button.title = "Horário já reservado";
+      } else {
         button.className = 'time-slot';
-        button.textContent = slot;
+
         button.onclick = () => {
-          // Remover seleção anterior
           document.querySelectorAll('.time-slot').forEach(btn => {
-            btn.classList.remove('selected');
+            if (!btn.disabled) btn.classList.remove('selected');
           });
-          
-          // Selecionar este
+
           button.classList.add('selected');
-          selectedTimeSlot = slot;
-          
-          // Atualizar select
+          selectedTimeSlot = slot.time;
+
           if (timeSelect) {
-            timeSelect.value = slot;
+            timeSelect.value = slot.time;
           }
         };
-        availableEl.appendChild(button);
-      });
-    }
+
+        // adicionar ao select apenas se estiver livre
+        if (timeSelect) {
+          const option = document.createElement('option');
+          option.value = slot.time;
+          option.textContent = slot.time;
+          timeSelect.appendChild(option);
+        }
+      }
+
+      availableEl.appendChild(button);
+    });
+
   } catch (error) {
     console.error('❌ Erro ao carregar slots:', error);
     if (loadingEl) loadingEl.style.display = 'none';
     if (noSlotsEl) noSlotsEl.style.display = 'block';
   }
 }
+
 
 // ==================== EVENT LISTENERS GLOBAIS ====================
 // Fechar modais ao clicar fora

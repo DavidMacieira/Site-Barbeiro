@@ -725,3 +725,270 @@ footer a:hover {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Adiciona no final do teu style.css */
+.time-slot.busy {
+  background-color: rgba(244, 67, 54, 0.2); /* Vermelho transparente */
+  color: #f44336; /* Vermelho vivo */
+  border-color: #f44336;
+  cursor: not-allowed;
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.time-slot.busy:hover {
+  transform: none;
+  background-color: rgba(244, 67, 54, 0.2);
+}
+
+
+
+
+/* ==================== NOTIFICAÇÕES PROFISSIONAIS ==================== */
+.notification-container {
+  position: fixed;
+  top: 30px;
+  right: 30px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-width: 400px;
+  width: 100%;
+  pointer-events: none;
+}
+
+.notification {
+  background: var(--secondary-black);
+  border-left: 6px solid var(--gold-accent);
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  padding: 20px 25px;
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  transform: translateX(120%);
+  animation: slideInNotification 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.notification.closing {
+  animation: slideOutNotification 0.4s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;
+}
+
+@keyframes slideInNotification {
+  0% { transform: translateX(120%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOutNotification {
+  0% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+
+.notification-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.notification.success .notification-icon {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+}
+
+.notification.error .notification-icon {
+  background: rgba(244, 67, 54, 0.15);
+  color: #f44336;
+}
+
+.notification.warning .notification-icon {
+  background: rgba(255, 152, 0, 0.15);
+  color: #ff9800;
+}
+
+.notification.info .notification-icon {
+  background: rgba(33, 150, 243, 0.15);
+  color: #2196f3;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--pure-white);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notification-message {
+  font-size: 0.9rem;
+  color: var(--text-gray);
+  line-height: 1.5;
+  margin-bottom: 8px;
+  padding-right: 20px;
+}
+
+.notification-time {
+  font-size: 0.7rem;
+  color: var(--light-gray);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.notification-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--gold-accent), #4ecdc4);
+  width: 100%;
+  animation: progressNotification 5s linear forwards;
+}
+
+@keyframes progressNotification {
+  0% { width: 100%; }
+  100% { width: 0%; }
+}
+
+.notification-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text-gray);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+}
+
+.notification-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--pure-white);
+  transform: scale(1.1);
+}
+
+/* Notificação de confirmação especial */
+.notification-booking {
+  background: linear-gradient(145deg, var(--secondary-black), #0f1412);
+  border-left-color: var(--gold-accent);
+}
+
+.notification-booking .booking-details {
+  margin-top: 10px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  font-size: 0.85rem;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.notification-booking .booking-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notification-booking .booking-detail-item i {
+  color: var(--gold-accent);
+  width: 16px;
+  text-align: center;
+}
+
+.notification-booking .booking-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.notification-booking .booking-actions button {
+  flex: 1;
+  padding: 10px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  pointer-events: auto;
+}
+
+.notification-booking .btn-whatsapp {
+  background: #25D366;
+  color: white;
+}
+
+.notification-booking .btn-whatsapp:hover {
+  background: #20BA5A;
+  transform: translateY(-2px);
+}
+
+.notification-booking .btn-calendar {
+  background: transparent;
+  border: 1px solid var(--gold-accent);
+  color: var(--gold-accent);
+}
+
+.notification-booking .btn-calendar:hover {
+  background: var(--gold-accent);
+  color: var(--primary-black);
+}
+
+/* Animações adicionais */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.notification.success {
+  border-left-color: #4caf50;
+}
+
+.notification.error {
+  border-left-color: #f44336;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .notification-container {
+    top: 20px;
+    right: 20px;
+    left: 20px;
+    max-width: none;
+  }
+  
+  .notification {
+    padding: 15px;
+  }
+  
+  .notification-booking .booking-details {
+    grid-template-columns: 1fr;
+  }
+}
