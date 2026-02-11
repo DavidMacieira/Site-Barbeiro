@@ -343,59 +343,91 @@ async function loadAvailableTimeSlots() {
   if (availableEl) availableEl.style.display = 'none';
   if (timeSelect) timeSelect.disabled = true;
   
+  // VALIDAÇÃO DE HORA: Verificar se é hoje
+  const now = new Date();
+  const bookingDate = document.getElementById('bookingDate');
+  const isToday = bookingDate.value === now.toISOString().split('T')[0];
+  const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+  
   try {
-    const slots = await barbeariaAPI.getAvailableSlots(date, parseInt(serviceDuration));
-    console.log('📊 Slots recebidos:', slots);
+    const result = await barbeariaAPI.getAvailableSlots(date, parseInt(serviceDuration));
+    console.log('📊 Slots recebidos:', result);
     
     if (loadingEl) loadingEl.style.display = 'none';
     
+    // Processar resultado (pode vir como array ou objeto com success)
+    let slots = Array.isArray(result) ? result : (result?.slots || result);
+    
+    // Se não houver slots
     if (!slots || slots.length === 0) {
       if (noSlotsEl) noSlotsEl.style.display = 'block';
       if (timeSelect) {
         timeSelect.innerHTML = '<option value="">Nenhum horário disponível</option>';
         timeSelect.disabled = true;
       }
-    } else {
-      if (availableEl) availableEl.style.display = 'block';
-      
-      // Atualizar select
+      return;
+    }
+    
+    // FILTRAR slots para não mostrar horas que já passaram se for HOJE
+    const validSlots = slots.filter(slot => {
+      if (!isToday) return true;
+      const [hours, minutes] = slot.split(':').map(Number);
+      const slotMinutes = (hours * 60) + minutes;
+      return slotMinutes > (currentMinutes + 15); // +15 min de margem para o cliente chegar
+    });
+    
+    console.log('✅ Slots válidos após filtro:', validSlots);
+    
+    // Se não houver slots após o filtro
+    if (validSlots.length === 0) {
+      if (noSlotsEl) noSlotsEl.style.display = 'block';
       if (timeSelect) {
-        timeSelect.innerHTML = '<option value="">Selecione um horário</option>';
-        slots.forEach(slot => {
-          const option = document.createElement('option');
-          option.value = slot;
-          option.textContent = slot;
-          timeSelect.appendChild(option);
-        });
-        timeSelect.disabled = false;
+        timeSelect.innerHTML = '<option value="">Nenhum horário disponível</option>';
+        timeSelect.disabled = true;
       }
-      
-      // Atualizar botões
-      if (availableEl) {
-        availableEl.innerHTML = '';
-        slots.forEach(slot => {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'time-slot';
-          button.textContent = slot;
-          button.onclick = () => {
-            // Remover seleção anterior
-            document.querySelectorAll('.time-slot').forEach(btn => {
-              btn.classList.remove('selected');
-            });
-            
-            // Selecionar este
-            button.classList.add('selected');
-            selectedTimeSlot = slot;
-            
-            // Atualizar select
-            if (timeSelect) {
-              timeSelect.value = slot;
-            }
-          };
-          availableEl.appendChild(button);
-        });
-      }
+      return;
+    }
+    
+    // Renderizar slots válidos
+    if (availableEl) availableEl.style.display = 'block';
+    
+    // Atualizar select
+    if (timeSelect) {
+      timeSelect.innerHTML = '<option value="">Selecione um horário</option>';
+      validSlots.forEach(slot => {
+        const option = document.createElement('option');
+        option.value = slot;
+        option.textContent = slot;
+        timeSelect.appendChild(option);
+      });
+      timeSelect.disabled = false;
+    }
+    
+    // Atualizar botões
+    if (availableEl) {
+      availableEl.innerHTML = '';
+      validSlots.forEach(slot => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'time-slot';
+        button.textContent = slot;
+        button.onclick = () => {
+          // Remover seleção anterior
+          document.querySelectorAll('.time-slot').forEach(btn => {
+            btn.classList.remove('selected');
+          });
+          
+          // Selecionar este
+          button.classList.add('selected');
+          selectedTimeSlot = slot;
+          
+          // Atualizar select
+          if (timeSelect) {
+            timeSelect.value = slot;
+          }
+        };
+        availableEl.appendChild(button);
+      });
     }
   } catch (error) {
     console.error('❌ Erro ao carregar slots:', error);
