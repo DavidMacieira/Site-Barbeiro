@@ -3,451 +3,613 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel do Barbeiro - João Angeiras</title>
+  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-  <title>Painel Barbeiro - João Angeiras Barbearia</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* Estilos específicos para admin */
-    .admin-container { padding-top: 100px; background: #121212; min-height: 100vh; }
-    .admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 30px 0; }
-    .stat-card { background: #1a1a1a; padding: 20px; border-radius: 8px; text-align: center; border-top: 3px solid #d4af37; }
-    .stat-card h3 { font-size: 2rem; color: #d4af37; margin-bottom: 5px; }
-    .admin-panel { background: #1a1a1a; padding: 30px; border-radius: 8px; margin-top: 20px; }
-    .table-container { overflow-x: auto; margin-top: 20px; }
-    table { width: 100%; border-collapse: collapse; background: #121212; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
-    th { background: #333; color: white; font-weight: 600; }
-    tr:hover { background: rgba(255,255,255,0.05); }
-    .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; display: inline-block; }
-    .status-pending { background: #ff9800; color: white; }
-    .status-confirmed { background: #4CAF50; color: white; }
-    .status-completed { background: #2196F3; color: white; }
-    .status-cancelled { background: #f44336; color: white; }
-    .btn-small { padding: 5px 10px; font-size: 0.8rem; margin: 2px; }
-    .btn-danger { background: #f44336; color: white; border: none; }
-    .btn-danger:hover { background: #d32f2f; }
-    .btn-success { background: #4CAF50; color: white; border: none; }
-    .btn-success:hover { background: #388E3C; }
-    .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-    .tab-btn.active { background: #d4af37; color: #121212; }
-    .config-section { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #333; }
-    .config-section h4 { color: #d4af37; margin-bottom: 15px; }
-    .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+    /* Estilos específicos para o calendário */
+    .calendar-view {
+      background: #1a1a1a;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+    }
     
-    /* Filtros */
-    .filters { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-end; }
-    .filter-group { display: flex; flex-direction: column; }
-    .filter-label { color: #fff; margin-bottom: 5px; font-size: 0.9rem; }
-    .filter-input { padding: 8px; border-radius: 4px; border: 1px solid #333; background: #121212; color: white; }
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #2a2a2a;
+      border-radius: 8px;
+    }
     
-    /* Loader */
-    .loader { border: 3px solid #333; border-top: 3px solid #d4af37; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .calendar-nav {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .calendar-nav button {
+      background: var(--gold-accent);
+      color: #000;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    .calendar-nav button:hover {
+      opacity: 0.8;
+    }
+    
+    .calendar-title {
+      font-size: 1.5rem;
+      color: var(--gold-accent);
+      font-weight: bold;
+    }
+    
+    .view-toggle {
+      display: flex;
+      gap: 5px;
+      background: #2a2a2a;
+      padding: 5px;
+      border-radius: 5px;
+    }
+    
+    .view-toggle button {
+      padding: 8px 15px;
+      background: transparent;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    
+    .view-toggle button.active {
+      background: var(--gold-accent);
+      color: #000;
+    }
+    
+    /* Visualização Semanal */
+    .week-view {
+      display: grid;
+      grid-template-columns: 80px repeat(7, 1fr);
+      gap: 1px;
+      background: #333;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .time-column {
+      background: #2a2a2a;
+      padding: 10px 5px;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #aaa;
+      border-right: 1px solid #444;
+    }
+    
+    .day-column {
+      background: #1a1a1a;
+      min-height: 500px;
+      position: relative;
+    }
+    
+    .day-header {
+      background: #2a2a2a;
+      padding: 15px 10px;
+      text-align: center;
+      border-bottom: 2px solid var(--gold-accent);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    .day-header .day-name {
+      font-weight: bold;
+      color: var(--gold-accent);
+      font-size: 0.9rem;
+    }
+    
+    .day-header .day-date {
+      color: #aaa;
+      font-size: 0.85rem;
+      margin-top: 3px;
+    }
+    
+    .day-header.today {
+      background: var(--gold-accent);
+    }
+    
+    .day-header.today .day-name,
+    .day-header.today .day-date {
+      color: #000;
+    }
+    
+    .time-slot-row {
+      height: 60px;
+      border-bottom: 1px solid #333;
+      position: relative;
+    }
+    
+    .booking-block {
+      position: absolute;
+      left: 5px;
+      right: 5px;
+      background: linear-gradient(135deg, #d4af37 0%, #aa8a2d 100%);
+      color: #000;
+      padding: 8px;
+      border-radius: 5px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+      overflow: hidden;
+    }
+    
+    .booking-block:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.5);
+      z-index: 100;
+    }
+    
+    .booking-block.status-pending {
+      background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    }
+    
+    .booking-block.status-confirmed {
+      background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+    }
+    
+    .booking-block.status-completed {
+      background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    }
+    
+    .booking-block.status-cancelled {
+      background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+      opacity: 0.6;
+    }
+    
+    .booking-time {
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    
+    .booking-client {
+      margin-top: 3px;
+      font-size: 0.85rem;
+    }
+    
+    .booking-service {
+      margin-top: 2px;
+      font-size: 0.75rem;
+      opacity: 0.9;
+    }
+    
+    /* Visualização Mensal */
+    .month-view {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+    
+    .month-day {
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 100px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .month-day:hover {
+      background: #333;
+      transform: translateY(-2px);
+    }
+    
+    .month-day.other-month {
+      opacity: 0.3;
+    }
+    
+    .month-day.today {
+      border: 2px solid var(--gold-accent);
+      background: #333;
+    }
+    
+    .day-number {
+      font-weight: bold;
+      color: var(--gold-accent);
+      margin-bottom: 10px;
+    }
+    
+    .day-bookings {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    
+    .mini-booking {
+      background: var(--gold-accent);
+      color: #000;
+      padding: 4px 6px;
+      border-radius: 3px;
+      font-size: 0.75rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .mini-booking.status-pending {
+      background: #ff9800;
+    }
+    
+    .mini-booking.status-confirmed {
+      background: #4CAF50;
+    }
+    
+    .mini-booking.status-completed {
+      background: #2196F3;
+    }
+    
+    .mini-booking.status-cancelled {
+      background: #f44336;
+      opacity: 0.6;
+    }
+    
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card-mini {
+      background: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .stat-card-mini .stat-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: var(--gold-accent);
+    }
+    
+    .stat-card-mini .stat-label {
+      color: #aaa;
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+    
+    /* Modal de detalhes da reserva */
+    .booking-detail-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .booking-detail-content {
+      background: #1a1a1a;
+      padding: 30px;
+      border-radius: 10px;
+      max-width: 500px;
+      width: 90%;
+      border: 2px solid var(--gold-accent);
+    }
+    
+    .booking-detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .booking-detail-title {
+      font-size: 1.5rem;
+      color: var(--gold-accent);
+    }
+    
+    .booking-detail-info {
+      background: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+    
+    .booking-detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #333;
+    }
+    
+    .booking-detail-row:last-child {
+      border-bottom: none;
+    }
+    
+    .booking-detail-label {
+      color: #aaa;
+    }
+    
+    .booking-detail-value {
+      color: #fff;
+      font-weight: bold;
+    }
+    
+    .booking-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .booking-actions button {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
   <!-- Navbar Admin -->
-  <nav>
-    <div class="container">
-      <a href="index.html" class="logo">JOÃO <span>ANGEIRAS</span> <small style="font-size: 0.8rem; color: #d4af37;">BARBEIRO</small></a>
-      <div class="nav-links">
-        <a href="#dashboard">Dashboard</a>
-        <a href="#agenda">Agenda</a>
-        <a href="#config">Configurações</a>
-        <button class="btn btn-secondary" onclick="logout()">Sair</button>
+  <nav style="background: #1a1a1a; padding: 15px 0; border-bottom: 2px solid var(--gold-accent);">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h1 style="color: var(--gold-accent); margin: 0;">
+          <i class="fas fa-cut"></i> Painel do Barbeiro
+        </h1>
+        <p style="color: #aaa; margin: 5px 0 0 0; font-size: 0.9rem;">João Angeiras Barbearia</p>
       </div>
+      <button class="btn btn-danger" onclick="logout()">
+        <i class="fas fa-sign-out-alt"></i> Sair
+      </button>
     </div>
   </nav>
 
-  <div class="admin-container">
-    <div class="container">
-      <!-- Dashboard -->
-      <section id="dashboard">
-        <h2 class="section-title">Dashboard</h2>
-        
-        <div class="admin-stats">
-          <div class="stat-card">
-            <h3 id="todayBookings">0</h3>
-            <p>Hoje</p>
-          </div>
-          <div class="stat-card">
-            <h3 id="weekBookings">0</h3>
-            <p>Esta Semana</p>
-          </div>
-          <div class="stat-card">
-            <h3 id="pendingBookings">0</h3>
-            <p>Pendentes</p>
-          </div>
-          <div class="stat-card">
-            <h3 id="totalRevenue">0€</h3>
-            <p>Receita</p>
-          </div>
-        </div>
-
-        <div class="admin-panel">
-          <h3><i class="fas fa-calendar-alt"></i> Próximas Marcações (Hoje)</h3>
-          <div class="table-container">
-            <table id="upcomingBookings">
-              <thead>
-                <tr>
-                  <th>Hora</th>
-                  <th>Cliente</th>
-                  <th>Telefone</th>
-                  <th>Serviço</th>
-                  <th>Valor</th>
-                  <th>Status</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="upcomingBookingsBody">
-                <tr>
-                  <td colspan="7" style="text-align: center; padding: 20px;">
-                    <div class="loader"></div>
-                    <p>Carregando reservas...</p>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- Agenda -->
-      <section id="agenda" style="margin-top: 50px;">
-        <h2 class="section-title">Agenda Completa</h2>
-        
-        <div class="admin-panel">
-          <div class="filters">
-            <div class="filter-group">
-              <label class="filter-label">Data:</label>
-              <input type="date" id="filterDate" class="filter-input">
-            </div>
-            <div class="filter-group">
-              <label class="filter-label">Status:</label>
-              <select id="filterStatus" class="filter-input">
-                <option value="">Todos</option>
-                <option value="pending">Pendentes</option>
-                <option value="confirmed">Confirmados</option>
-                <option value="completed">Concluídos</option>
-                <option value="cancelled">Cancelados</option>
-              </select>
-            </div>
-            <div class="filter-group">
-              <button class="btn" onclick="loadAllBookings()" style="margin-top: 5px;">
-                <i class="fas fa-sync-alt"></i> Atualizar
-              </button>
-            </div>
-            <div class="filter-group">
-              <button class="btn btn-success" onclick="addManualBooking()" style="margin-top: 5px;">
-                <i class="fas fa-plus"></i> Nova Reserva
-              </button>
-            </div>
-          </div>
-
-          <div class="table-container">
-            <table id="allBookings">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Hora</th>
-                  <th>Cliente</th>
-                  <th>Telefone</th>
-                  <th>Serviço</th>
-                  <th>Valor</th>
-                  <th>Status</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="allBookingsBody">
-                <tr>
-                  <td colspan="8" style="text-align: center; padding: 40px;">
-                    <div class="loader"></div>
-                    <p>Carregando agenda...</p>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- Configurações -->
-      <section id="config" style="margin-top: 50px;">
-        <h2 class="section-title">Configurações</h2>
-        
-        <div class="admin-panel">
-          <div class="tabs">
-            <button class="btn tab-btn active" onclick="openTab('horarios')">Horários</button>
-            <button class="btn tab-btn" onclick="openTab('feriados')">Feriados/Férias</button>
-            <button class="btn tab-btn" onclick="openTab('whatsapp')">WhatsApp</button>
-            <button class="btn tab-btn" onclick="openTab('api')">Sistema</button>
-          </div>
-
-          <!-- Horários -->
-          <div id="horarios" class="tab-content active">
-            <h3><i class="fas fa-clock"></i> Horário de Funcionamento</h3>
-            
-            <div class="config-section">
-              <div class="config-grid">
-                <div>
-                  <label class="filter-label">Abertura:</label>
-                  <select id="openTime" class="filter-input">
-                    <option value="8">08:00</option>
-                    <option value="9" selected>09:00</option>
-                    <option value="10">10:00</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="filter-label">Fecho:</label>
-                  <select id="closeTime" class="filter-input">
-                    <option value="18">18:00</option>
-                    <option value="19" selected>19:00</option>
-                    <option value="20">20:00</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="config-section">
-              <label class="filter-label">Intervalo de Almoço:</label>
-              <div class="config-grid">
-                <div>
-                  <label style="color: #aaa;">Início:</label>
-                  <select id="breakStart" class="filter-input">
-                    <option value="12" selected>12:00</option>
-                    <option value="13">13:00</option>
-                  </select>
-                </div>
-                <div>
-                  <label style="color: #aaa;">Fim:</label>
-                  <select id="breakEnd" class="filter-input">
-                    <option value="13">13:00</option>
-                    <option value="14" selected>14:00</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="config-section">
-              <label class="filter-label">Dias de Trabalho:</label>
-              <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <label style="color: #aaa; cursor: pointer;">
-                  <input type="checkbox" name="workingDays" value="2" checked> Segunda
-                </label>
-                <label style="color: #aaa; cursor: pointer;">
-                  <input type="checkbox" name="workingDays" value="3" checked> Terça
-                </label>
-                <label style="color: #aaa; cursor: pointer;">
-                  <input type="checkbox" name="workingDays" value="4" checked> Quarta
-                </label>
-                <label style="color: #aaa; cursor: pointer;">
-                  <input type="checkbox" name="workingDays" value="5" checked> Quinta
-                </label>
-                <label style="color: #aaa; cursor: pointer;">
-                  <input type="checkbox" name="workingDays" value="6" checked> Sexta
-                </label>
-                <label style="color: #aaa; cursor: pointer;">
-                  <input type="checkbox" name="workingDays" value="7" checked> Sábado
-                </label>
-                <label style="color: #aaa; cursor: pointer;">
-                  <input type="checkbox" name="workingDays" value="1"> Domingo
-                </label>
-              </div>
-            </div>
-
-            <button class="btn" onclick="saveWorkingHours()">
-              <i class="fas fa-save"></i> Salvar Horários
-            </button>
-          </div>
-
-          <!-- Feriados -->
-          <div id="feriados" class="tab-content">
-            <h3><i class="fas fa-calendar-times"></i> Bloquear Datas</h3>
-            <p style="color: #aaa; margin-bottom: 20px;">Adicione feriados ou períodos de férias.</p>
-            
-            <div class="config-section">
-              <label class="filter-label">Descrição:</label>
-              <input type="text" id="blockDescription" placeholder="Ex: Férias de Verão" class="filter-input">
-            </div>
-            
-            <div class="config-section">
-              <label class="filter-label">Tipo:</label>
-              <select id="blockType" class="filter-input">
-                <option value="single">Data única</option>
-                <option value="range">Período</option>
-              </select>
-            </div>
-            
-            <div class="config-section">
-              <label class="filter-label">Data Início:</label>
-              <input type="date" id="blockStartDate" class="filter-input">
-            </div>
-            
-            <div id="blockEndDateGroup" class="config-section" style="display: none;">
-              <label class="filter-label">Data Fim:</label>
-              <input type="date" id="blockEndDate" class="filter-input">
-            </div>
-            
-            <button class="btn" onclick="addBlockedDate()">
-              <i class="fas fa-ban"></i> Bloquear Data
-            </button>
-            
-            <h4 style="margin-top: 40px; margin-bottom: 20px;">Datas Bloqueadas:</h4>
-            <div class="table-container">
-              <table id="blockedDatesTable">
-                <thead>
-                  <tr>
-                    <th>Descrição</th>
-                    <th>Data(s)</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="blockedDatesBody">
-                  <tr>
-                    <td colspan="3" style="text-align: center; padding: 20px; color: #aaa;">
-                      Carregando datas bloqueadas...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- WhatsApp -->
-          <div id="whatsapp" class="tab-content">
-            <h3><i class="fab fa-whatsapp"></i> Configuração WhatsApp</h3>
-            
-            <div class="config-section">
-              <label class="filter-label">Número do WhatsApp:</label>
-              <input type="text" id="whatsappNumber" value="+351919241169" placeholder="+351912345678" class="filter-input">
-              <p style="color: #aaa; font-size: 0.9rem; margin-top: 5px;">Este número receberá as mensagens de marcação</p>
-            </div>
-            
-            <div class="config-section">
-              <label class="filter-label">Mensagem Padrão:</label>
-              <textarea id="whatsappMessage" class="filter-input" rows="4" placeholder="Digite a mensagem padrão...">✅ NOVA MARCAÇÃO - Barbearia João Angeiras
-
-👤 Cliente: {nome}
-📱 Telefone: {telefone}
-✂️ Serviço: {servico}
-💰 Preço: {preço}€
-📅 Data: {data}
-🕐 Horário: {hora}
-
-Por favor, confirme esta marcação.</textarea>
-            </div>
-            
-            <button class="btn" onclick="saveWhatsAppSettings()">
-              <i class="fas fa-save"></i> Salvar Configurações
-            </button>
-          </div>
-
-          <!-- Sistema -->
-          <div id="api" class="tab-content">
-            <h3><i class="fas fa-cogs"></i> Status do Sistema</h3>
-            
-            <div class="config-section">
-              <div id="apiStatus" style="padding: 20px; background: #1a1a1a; border-radius: 8px;">
-                <div class="loader" style="margin: 0 auto 10px;"></div>
-                <p style="text-align: center;">Verificando conexão com o sistema...</p>
-              </div>
-            </div>
-            
-            <div class="config-section">
-              <h4>URL da API:</h4>
-              <code id="apiUrl" style="display: block; padding: 10px; background: #121212; border: 1px solid #333; border-radius: 4px; margin: 10px 0; color: #aaa; word-break: break-all;"></code>
-              <p style="color: #aaa; font-size: 0.9rem;">Esta URL conecta o site ao Google Sheets</p>
-            </div>
-            
-            <div class="config-section">
-              <h4>Dados do Sistema:</h4>
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
-                <div style="background: #121212; padding: 15px; border-radius: 5px;">
-                  <h5 style="color: #d4af37; margin-bottom: 5px;">Reservas Totais</h5>
-                  <p id="totalBookings" style="font-size: 1.5rem; font-weight: bold;">0</p>
-                </div>
-                <div style="background: #121212; padding: 15px; border-radius: 5px;">
-                  <h5 style="color: #d4af37; margin-bottom: 5px;">Serviços</h5>
-                  <p id="totalServices" style="font-size: 1.5rem; font-weight: bold;">3</p>
-                </div>
-              </div>
-            </div>
-            
-            <button class="btn" onclick="testAPIConnection()" style="margin-right: 10px;">
-              <i class="fas fa-redo"></i> Testar Conexão
-            </button>
-            
-            <button class="btn btn-secondary" onclick="clearCache()">
-              <i class="fas fa-trash"></i> Limpar Cache
-            </button>
-          </div>
-        </div>
-      </section>
+  <div class="container" style="padding: 30px 20px;">
+    
+    <!-- Estatísticas Rápidas -->
+    <div class="stats-summary">
+      <div class="stat-card-mini">
+        <div class="stat-value" id="todayBookings">0</div>
+        <div class="stat-label">Hoje</div>
+      </div>
+      <div class="stat-card-mini">
+        <div class="stat-value" id="weekBookings">0</div>
+        <div class="stat-label">Esta Semana</div>
+      </div>
+      <div class="stat-card-mini">
+        <div class="stat-value" id="pendingBookings">0</div>
+        <div class="stat-label">Pendentes</div>
+      </div>
+      <div class="stat-card-mini">
+        <div class="stat-value" id="totalRevenue">0€</div>
+        <div class="stat-label">Faturação</div>
+      </div>
     </div>
+
+    <!-- Navegação por Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="openTab('calendarTab')">
+        <i class="fas fa-calendar-week"></i> Calendário
+      </button>
+      <button class="tab-btn" onclick="openTab('agendaTab')">
+        <i class="fas fa-list"></i> Todas as Reservas
+      </button>
+      <button class="tab-btn" onclick="openTab('settingsTab')">
+        <i class="fas fa-cog"></i> Configurações
+      </button>
+    </div>
+
+    <!-- TAB: Calendário -->
+    <div id="calendarTab" class="tab-content active">
+      <div class="calendar-view">
+        <div class="calendar-header">
+          <div class="calendar-nav">
+            <button onclick="previousPeriod()">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <h2 class="calendar-title" id="calendarTitle">Fevereiro 2025</h2>
+            <button onclick="nextPeriod()">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+            <button onclick="goToToday()" style="margin-left: 10px;">
+              <i class="fas fa-calendar-day"></i> Hoje
+            </button>
+          </div>
+          
+          <div class="view-toggle">
+            <button class="active" onclick="switchView('week')" id="weekViewBtn">
+              <i class="fas fa-calendar-week"></i> Semana
+            </button>
+            <button onclick="switchView('month')" id="monthViewBtn">
+              <i class="fas fa-calendar"></i> Mês
+            </button>
+          </div>
+        </div>
+
+        <!-- Container para visualizações -->
+        <div id="calendarContainer"></div>
+      </div>
+    </div>
+
+    <!-- TAB: Todas as Reservas -->
+    <div id="agendaTab" class="tab-content">
+      <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+        <div class="form-group" style="flex: 1;">
+          <label>Filtrar por Data</label>
+          <input type="date" id="filterDate" class="form-control">
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label>Filtrar por Status</label>
+          <select id="filterStatus" class="form-control">
+            <option value="">Todos</option>
+            <option value="pending">Pendentes</option>
+            <option value="confirmed">Confirmados</option>
+            <option value="completed">Concluídos</option>
+            <option value="cancelled">Cancelados</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+          <button class="btn" onclick="loadAllBookings()">
+            <i class="fas fa-search"></i> Filtrar
+          </button>
+        </div>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Hora</th>
+              <th>Nome</th>
+              <th>Telefone</th>
+              <th>Serviço</th>
+              <th>Preço</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="allBookingsBody">
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 40px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i>
+                <p style="margin-top: 10px;">Carregando...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: Configurações -->
+    <div id="settingsTab" class="tab-content">
+      <!-- Horários de Funcionamento -->
+      <div class="settings-card">
+        <h3><i class="fas fa-clock"></i> Horários de Funcionamento</h3>
+        <form onsubmit="event.preventDefault(); saveWorkingHours();">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-group">
+              <label>Hora de Abertura</label>
+              <input type="time" id="openTime" value="09:00">
+            </div>
+            <div class="form-group">
+              <label>Hora de Fecho</label>
+              <input type="time" id="closeTime" value="19:00">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Dias Fechados</label>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" value="0" name="closedDays"> Domingo
+              </label>
+              <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" value="1" name="closedDays" checked> Segunda
+              </label>
+              <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" value="2" name="closedDays"> Terça
+              </label>
+              <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" value="3" name="closedDays"> Quarta
+              </label>
+              <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" value="4" name="closedDays"> Quinta
+              </label>
+              <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" value="5" name="closedDays"> Sexta
+              </label>
+              <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" value="6" name="closedDays"> Sábado
+              </label>
+            </div>
+          </div>
+          
+          <button type="submit" class="btn">
+            <i class="fas fa-save"></i> Salvar Horários
+          </button>
+        </form>
+      </div>
+
+      <!-- Bloquear Datas -->
+      <div class="settings-card" style="margin-top: 20px;">
+        <h3><i class="fas fa-ban"></i> Bloquear Datas</h3>
+        <form onsubmit="event.preventDefault(); addBlockedDate();">
+          <div class="form-group">
+            <label>Descrição</label>
+            <input type="text" id="blockDescription" placeholder="Ex: Férias, Feriado, etc." required>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-group">
+              <label>Data Início</label>
+              <input type="date" id="blockStartDate" required>
+            </div>
+            <div class="form-group">
+              <label>Data Fim (opcional)</label>
+              <input type="date" id="blockEndDate">
+            </div>
+          </div>
+          
+          <button type="submit" class="btn">
+            <i class="fas fa-ban"></i> Bloquear
+          </button>
+        </form>
+
+        <h4 style="margin-top: 30px;">Datas Bloqueadas</h4>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Descrição</th>
+              <th>Período</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="blockedDatesBody">
+            <tr>
+              <td colspan="3" style="text-align: center; padding: 20px;">
+                Nenhuma data bloqueada
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Modal Nova Reserva Manual -->
-  <div id="manualBookingModal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeManualBookingModal()">&times;</span>
-      <h2><i class="fas fa-plus"></i> Nova Reserva Manual</h2>
-      
-      <div class="form-group">
-        <label>Nome do Cliente *</label>
-        <input type="text" id="manualClientName" placeholder="Nome do cliente" class="filter-input">
+  <!-- Modal de Detalhes da Reserva -->
+  <div id="bookingDetailModal" class="booking-detail-modal">
+    <div class="booking-detail-content">
+      <div class="booking-detail-header">
+        <h2 class="booking-detail-title">
+          <i class="fas fa-calendar-check"></i> Detalhes da Reserva
+        </h2>
+        <button onclick="closeBookingDetail()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
 
-      <div class="form-group">
-        <label>Telefone *</label>
-        <input type="tel" id="manualClientPhone" placeholder="912 345 678" class="filter-input">
+      <div id="bookingDetailContent">
+        <!-- Conteúdo será preenchido dinamicamente -->
       </div>
-
-      <div class="form-group">
-        <label>Serviço *</label>
-        <select id="manualServiceSelect" class="filter-input">
-          <option value="">Selecione um serviço</option>
-          <option value="Corte de Cabelo|11|30">Corte de Cabelo - 11€ (30 min)</option>
-          <option value="Barba|5|20">Barba - 5€ (20 min)</option>
-          <option value="Corte + Barba|15|50">Corte + Barba - 15€ (50 min)</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Data *</label>
-        <input type="date" id="manualBookingDate" class="filter-input">
-      </div>
-
-      <div class="form-group">
-        <label>Horário *</label>
-        <input type="time" id="manualBookingTime" class="filter-input" step="1800">
-      </div>
-
-      <div class="form-group">
-        <label>Status</label>
-        <select id="manualBookingStatus" class="filter-input">
-          <option value="pending">Pendente</option>
-          <option value="confirmed">Confirmado</option>
-          <option value="completed">Concluído</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Notas</label>
-        <textarea id="manualBookingNotes" class="filter-input" rows="3" placeholder="Notas adicionais..."></textarea>
-      </div>
-
-      <button class="btn btn-success" onclick="saveManualBooking()">
-        <i class="fas fa-save"></i> Salvar Reserva
-      </button>
     </div>
   </div>
 
   <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
   <script src="js/api.js"></script>
+  <script src="js/admin-calendar.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>
