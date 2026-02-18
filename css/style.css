@@ -702,7 +702,7 @@ footer a:hover {
 
 .time-slot {
   padding: 10px 15px;
-  background-color: var(--primary-black);
+  background-color: white;
   border: 2px solid var(--accent-gray);
   border-radius: 6px;
   cursor: pointer;
