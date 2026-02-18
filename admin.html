@@ -3,613 +3,409 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel do Barbeiro - João Angeiras</title>
-  
+  <title>Painel do Barbeiro — João Angeiras</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Outfit:wght@300;400;500;600&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css">
-  <style>
-    /* Estilos específicos para o calendário */
-    .calendar-view {
-      background: #1a1a1a;
-      border-radius: 10px;
-      padding: 20px;
-      margin-top: 20px;
-    }
-    
-    .calendar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding: 15px;
-      background: #2a2a2a;
-      border-radius: 8px;
-    }
-    
-    .calendar-nav {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    
-    .calendar-nav button {
-      background: var(--gold-accent);
-      color: #000;
-      border: none;
-      padding: 8px 15px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    
-    .calendar-nav button:hover {
-      opacity: 0.8;
-    }
-    
-    .calendar-title {
-      font-size: 1.5rem;
-      color: var(--gold-accent);
-      font-weight: bold;
-    }
-    
-    .view-toggle {
-      display: flex;
-      gap: 5px;
-      background: #2a2a2a;
-      padding: 5px;
-      border-radius: 5px;
-    }
-    
-    .view-toggle button {
-      padding: 8px 15px;
-      background: transparent;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      border-radius: 3px;
-    }
-    
-    .view-toggle button.active {
-      background: var(--gold-accent);
-      color: #000;
-    }
-    
-    /* Visualização Semanal */
-    .week-view {
-      display: grid;
-      grid-template-columns: 80px repeat(7, 1fr);
-      gap: 1px;
-      background: #333;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    
-    .time-column {
-      background: #2a2a2a;
-      padding: 10px 5px;
-      text-align: center;
-      font-size: 0.9rem;
-      color: #aaa;
-      border-right: 1px solid #444;
-    }
-    
-    .day-column {
-      background: #1a1a1a;
-      min-height: 500px;
-      position: relative;
-    }
-    
-    .day-header {
-      background: #2a2a2a;
-      padding: 15px 10px;
-      text-align: center;
-      border-bottom: 2px solid var(--gold-accent);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    
-    .day-header .day-name {
-      font-weight: bold;
-      color: var(--gold-accent);
-      font-size: 0.9rem;
-    }
-    
-    .day-header .day-date {
-      color: #aaa;
-      font-size: 0.85rem;
-      margin-top: 3px;
-    }
-    
-    .day-header.today {
-      background: var(--gold-accent);
-    }
-    
-    .day-header.today .day-name,
-    .day-header.today .day-date {
-      color: #000;
-    }
-    
-    .time-slot-row {
-      height: 60px;
-      border-bottom: 1px solid #333;
-      position: relative;
-    }
-    
-    .booking-block {
-      position: absolute;
-      left: 5px;
-      right: 5px;
-      background: linear-gradient(135deg, #d4af37 0%, #aa8a2d 100%);
-      color: #000;
-      padding: 8px;
-      border-radius: 5px;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: all 0.3s;
-      box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
-      overflow: hidden;
-    }
-    
-    .booking-block:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.5);
-      z-index: 100;
-    }
-    
-    .booking-block.status-pending {
-      background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
-    }
-    
-    .booking-block.status-confirmed {
-      background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
-    }
-    
-    .booking-block.status-completed {
-      background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-    }
-    
-    .booking-block.status-cancelled {
-      background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
-      opacity: 0.6;
-    }
-    
-    .booking-time {
-      font-weight: bold;
-      font-size: 0.9rem;
-    }
-    
-    .booking-client {
-      margin-top: 3px;
-      font-size: 0.85rem;
-    }
-    
-    .booking-service {
-      margin-top: 2px;
-      font-size: 0.75rem;
-      opacity: 0.9;
-    }
-    
-    /* Visualização Mensal */
-    .month-view {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 5px;
-    }
-    
-    .month-day {
-      background: #2a2a2a;
-      border-radius: 8px;
-      padding: 10px;
-      min-height: 100px;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    
-    .month-day:hover {
-      background: #333;
-      transform: translateY(-2px);
-    }
-    
-    .month-day.other-month {
-      opacity: 0.3;
-    }
-    
-    .month-day.today {
-      border: 2px solid var(--gold-accent);
-      background: #333;
-    }
-    
-    .day-number {
-      font-weight: bold;
-      color: var(--gold-accent);
-      margin-bottom: 10px;
-    }
-    
-    .day-bookings {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-    
-    .mini-booking {
-      background: var(--gold-accent);
-      color: #000;
-      padding: 4px 6px;
-      border-radius: 3px;
-      font-size: 0.75rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    
-    .mini-booking.status-pending {
-      background: #ff9800;
-    }
-    
-    .mini-booking.status-confirmed {
-      background: #4CAF50;
-    }
-    
-    .mini-booking.status-completed {
-      background: #2196F3;
-    }
-    
-    .mini-booking.status-cancelled {
-      background: #f44336;
-      opacity: 0.6;
-    }
-    
-    .stats-summary {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-    
-    .stat-card-mini {
-      background: #2a2a2a;
-      padding: 15px;
-      border-radius: 8px;
-      text-align: center;
-    }
-    
-    .stat-card-mini .stat-value {
-      font-size: 1.8rem;
-      font-weight: bold;
-      color: var(--gold-accent);
-    }
-    
-    .stat-card-mini .stat-label {
-      color: #aaa;
-      font-size: 0.9rem;
-      margin-top: 5px;
-    }
-    
-    /* Modal de detalhes da reserva */
-    .booking-detail-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
-      z-index: 10000;
-      justify-content: center;
-      align-items: center;
-    }
-    
-    .booking-detail-content {
-      background: #1a1a1a;
-      padding: 30px;
-      border-radius: 10px;
-      max-width: 500px;
-      width: 90%;
-      border: 2px solid var(--gold-accent);
-    }
-    
-    .booking-detail-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    
-    .booking-detail-title {
-      font-size: 1.5rem;
-      color: var(--gold-accent);
-    }
-    
-    .booking-detail-info {
-      background: #2a2a2a;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-    }
-    
-    .booking-detail-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid #333;
-    }
-    
-    .booking-detail-row:last-child {
-      border-bottom: none;
-    }
-    
-    .booking-detail-label {
-      color: #aaa;
-    }
-    
-    .booking-detail-value {
-      color: #fff;
-      font-weight: bold;
-    }
-    
-    .booking-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-    
-    .booking-actions button {
-      flex: 1;
-    }
-  </style>
+  <link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
-  <!-- Navbar Admin -->
-  <nav style="background: #1a1a1a; padding: 15px 0; border-bottom: 2px solid var(--gold-accent);">
-    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+
+<div class="admin-layout">
+
+  <!-- ═══════════════ TOPBAR ═══════════════ -->
+  <header class="admin-topbar">
+    <div class="topbar-brand">
+      <div class="brand-icon"><i class="fas fa-cut"></i></div>
       <div>
-        <h1 style="color: var(--gold-accent); margin: 0;">
-          <i class="fas fa-cut"></i> Painel do Barbeiro
-        </h1>
-        <p style="color: #aaa; margin: 5px 0 0 0; font-size: 0.9rem;">João Angeiras Barbearia</p>
+        <h1>João Angeiras</h1>
+        <span>Painel do Barbeiro</span>
       </div>
-      <button class="btn btn-danger" onclick="logout()">
+    </div>
+
+    <div class="topbar-right">
+      <div style="text-align:right;">
+        <div class="topbar-time" id="topbarTime">--:--</div>
+        <div class="topbar-date" id="topbarDate">--</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="logout()">
         <i class="fas fa-sign-out-alt"></i> Sair
       </button>
     </div>
-  </nav>
+  </header>
 
-  <div class="container" style="padding: 30px 20px;">
-    
-    <!-- Estatísticas Rápidas -->
-    <div class="stats-summary">
-      <div class="stat-card-mini">
-        <div class="stat-value" id="todayBookings">0</div>
-        <div class="stat-label">Hoje</div>
-      </div>
-      <div class="stat-card-mini">
-        <div class="stat-value" id="weekBookings">0</div>
-        <div class="stat-label">Esta Semana</div>
-      </div>
-      <div class="stat-card-mini">
-        <div class="stat-value" id="pendingBookings">0</div>
-        <div class="stat-label">Pendentes</div>
-      </div>
-      <div class="stat-card-mini">
-        <div class="stat-value" id="totalRevenue">0€</div>
-        <div class="stat-label">Faturação</div>
-      </div>
-    </div>
-
-    <!-- Navegação por Tabs -->
-    <div class="tabs">
-      <button class="tab-btn active" onclick="openTab('calendarTab')">
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-label">Agenda</div>
+    <div class="sidebar-section">
+      <button class="sidebar-btn active" onclick="showTab('tabCalendar', this)">
         <i class="fas fa-calendar-week"></i> Calendário
       </button>
-      <button class="tab-btn" onclick="openTab('agendaTab')">
+      <button class="sidebar-btn" onclick="showTab('tabBookings', this)">
         <i class="fas fa-list"></i> Todas as Reservas
+        <span class="badge red" id="sidebarPendingBadge" style="display:none">0</span>
       </button>
-      <button class="tab-btn" onclick="openTab('settingsTab')">
+    </div>
+
+    <div class="sidebar-label">Gestão</div>
+    <div class="sidebar-section">
+      <button class="sidebar-btn" onclick="showTab('tabManual', this)">
+        <i class="fas fa-plus-circle"></i> Nova Reserva
+      </button>
+      <button class="sidebar-btn" onclick="showTab('tabBlocked', this)">
+        <i class="fas fa-ban"></i> Dias Bloqueados
+      </button>
+    </div>
+
+    <div class="sidebar-label">Sistema</div>
+    <div class="sidebar-section">
+      <button class="sidebar-btn" onclick="showTab('tabSettings', this)">
         <i class="fas fa-cog"></i> Configurações
       </button>
     </div>
 
-    <!-- TAB: Calendário -->
-    <div id="calendarTab" class="tab-content active">
-      <div class="calendar-view">
-        <div class="calendar-header">
-          <div class="calendar-nav">
-            <button onclick="previousPeriod()">
-              <i class="fas fa-chevron-left"></i>
-            </button>
-            <h2 class="calendar-title" id="calendarTitle">Fevereiro 2025</h2>
-            <button onclick="nextPeriod()">
-              <i class="fas fa-chevron-right"></i>
-            </button>
-            <button onclick="goToToday()" style="margin-left: 10px;">
-              <i class="fas fa-calendar-day"></i> Hoje
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-footer">
+      <button class="sidebar-btn" onclick="logout()">
+        <i class="fas fa-sign-out-alt"></i> Terminar Sessão
+      </button>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main class="admin-main">
+
+    <!-- STAT CARDS -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon gold"><i class="fas fa-calendar-day"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statToday">0</div>
+          <div class="stat-label">Hoje</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-calendar-week"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statWeek">0</div>
+          <div class="stat-label">Esta Semana</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fas fa-clock"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statPending">0</div>
+          <div class="stat-label">Pendentes</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-euro-sign"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statRevenue">0€</div>
+          <div class="stat-label">Faturação Mês</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TAB: CALENDÁRIO ─── -->
+    <div id="tabCalendar" class="tab-view active">
+      <div class="card">
+        <div class="cal-toolbar">
+          <div class="cal-nav">
+            <button onclick="calPrev()" title="Anterior"><i class="fas fa-chevron-left"></i></button>
+            <span class="cal-title" id="calTitle">—</span>
+            <button onclick="calNext()" title="Próximo"><i class="fas fa-chevron-right"></i></button>
+            <button class="cal-today-btn" onclick="calToday()">
+              <i class="fas fa-dot-circle"></i> Hoje
             </button>
           </div>
-          
           <div class="view-toggle">
-            <button class="active" onclick="switchView('week')" id="weekViewBtn">
+            <button class="active" id="btnWeek" onclick="switchCalView('week')">
               <i class="fas fa-calendar-week"></i> Semana
             </button>
-            <button onclick="switchView('month')" id="monthViewBtn">
+            <button id="btnMonth" onclick="switchCalView('month')">
               <i class="fas fa-calendar"></i> Mês
             </button>
           </div>
         </div>
-
-        <!-- Container para visualizações -->
-        <div id="calendarContainer"></div>
+        <div id="calContainer"></div>
       </div>
     </div>
 
-    <!-- TAB: Todas as Reservas -->
-    <div id="agendaTab" class="tab-content">
-      <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-        <div class="form-group" style="flex: 1;">
-          <label>Filtrar por Data</label>
-          <input type="date" id="filterDate" class="form-control">
+    <!-- ─── TAB: TODAS AS RESERVAS ─── -->
+    <div id="tabBookings" class="tab-view">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fas fa-list"></i> Todas as Reservas</h3>
         </div>
-        <div class="form-group" style="flex: 1;">
-          <label>Filtrar por Status</label>
-          <select id="filterStatus" class="form-control">
-            <option value="">Todos</option>
-            <option value="pending">Pendentes</option>
-            <option value="confirmed">Confirmados</option>
-            <option value="completed">Concluídos</option>
-            <option value="cancelled">Cancelados</option>
-          </select>
-        </div>
-        <div style="display: flex; align-items: flex-end;">
-          <button class="btn" onclick="loadAllBookings()">
-            <i class="fas fa-search"></i> Filtrar
-          </button>
-        </div>
-      </div>
-
-      <div style="overflow-x: auto;">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Hora</th>
-              <th>Nome</th>
-              <th>Telefone</th>
-              <th>Serviço</th>
-              <th>Preço</th>
-              <th>Status</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="allBookingsBody">
-            <tr>
-              <td colspan="8" style="text-align: center; padding: 40px;">
-                <i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i>
-                <p style="margin-top: 10px;">Carregando...</p>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- TAB: Configurações -->
-    <div id="settingsTab" class="tab-content">
-      <!-- Horários de Funcionamento -->
-      <div class="settings-card">
-        <h3><i class="fas fa-clock"></i> Horários de Funcionamento</h3>
-        <form onsubmit="event.preventDefault(); saveWorkingHours();">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="card-body">
+          <div class="filter-bar">
             <div class="form-group">
-              <label>Hora de Abertura</label>
-              <input type="time" id="openTime" value="09:00">
+              <label>Data</label>
+              <input type="date" id="filterDate" class="form-control">
             </div>
             <div class="form-group">
-              <label>Hora de Fecho</label>
-              <input type="time" id="closeTime" value="19:00">
+              <label>Estado</label>
+              <select id="filterStatus" class="form-control">
+                <option value="">Todos</option>
+                <option value="pending">Pendentes</option>
+                <option value="confirmed">Confirmados</option>
+                <option value="completed">Concluídos</option>
+                <option value="cancelled">Cancelados</option>
+              </select>
+            </div>
+            <button class="btn btn-outline" onclick="loadAllBookings()">
+              <i class="fas fa-search"></i> Filtrar
+            </button>
+            <button class="btn btn-ghost" onclick="clearFilters()">
+              <i class="fas fa-times"></i> Limpar
+            </button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Hora</th>
+                  <th>Cliente</th>
+                  <th>Telefone</th>
+                  <th>Serviço</th>
+                  <th>Preço</th>
+                  <th>Estado</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="bookingsBody">
+                <tr><td colspan="8" class="empty-state"><i class="fas fa-spinner fa-spin"></i></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TAB: NOVA RESERVA MANUAL ─── -->
+    <div id="tabManual" class="tab-view">
+      <div class="card" style="max-width:600px;">
+        <div class="card-header">
+          <h3><i class="fas fa-plus-circle"></i> Nova Reserva pelo Barbeiro</h3>
+        </div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:16px;">
+          <div class="settings-row">
+            <div class="form-group">
+              <label>Nome do Cliente *</label>
+              <input type="text" id="mName" class="form-control" placeholder="Ex: Pedro Silva">
+            </div>
+            <div class="form-group">
+              <label>Telefone *</label>
+              <input type="tel" id="mPhone" class="form-control" placeholder="9XXXXXXXX">
             </div>
           </div>
-          
           <div class="form-group">
-            <label>Dias Fechados</label>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <label style="display: flex; align-items: center; gap: 5px;">
-                <input type="checkbox" value="0" name="closedDays"> Domingo
-              </label>
-              <label style="display: flex; align-items: center; gap: 5px;">
-                <input type="checkbox" value="1" name="closedDays" checked> Segunda
-              </label>
-              <label style="display: flex; align-items: center; gap: 5px;">
-                <input type="checkbox" value="2" name="closedDays"> Terça
-              </label>
-              <label style="display: flex; align-items: center; gap: 5px;">
-                <input type="checkbox" value="3" name="closedDays"> Quarta
-              </label>
-              <label style="display: flex; align-items: center; gap: 5px;">
-                <input type="checkbox" value="4" name="closedDays"> Quinta
-              </label>
-              <label style="display: flex; align-items: center; gap: 5px;">
-                <input type="checkbox" value="5" name="closedDays"> Sexta
-              </label>
-              <label style="display: flex; align-items: center; gap: 5px;">
-                <input type="checkbox" value="6" name="closedDays"> Sábado
-              </label>
+            <label>Serviço *</label>
+            <select id="mService" class="form-control">
+              <option value="">Selecionar serviço...</option>
+              <option value="Corte de Cabelo|11|30">Corte de Cabelo — 11€</option>
+              <option value="Barba|5|20">Barba — 5€</option>
+              <option value="Corte + Barba|15|50">Corte + Barba — 15€</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <div class="form-group">
+              <label>Data *</label>
+              <input type="date" id="mDate" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Hora *</label>
+              <input type="time" id="mTime" class="form-control" value="10:00" step="1800">
             </div>
           </div>
-          
-          <button type="submit" class="btn">
-            <i class="fas fa-save"></i> Salvar Horários
-          </button>
-        </form>
-      </div>
-
-      <!-- Bloquear Datas -->
-      <div class="settings-card" style="margin-top: 20px;">
-        <h3><i class="fas fa-ban"></i> Bloquear Datas</h3>
-        <form onsubmit="event.preventDefault(); addBlockedDate();">
           <div class="form-group">
-            <label>Descrição</label>
-            <input type="text" id="blockDescription" placeholder="Ex: Férias, Feriado, etc." required>
+            <label>Estado inicial</label>
+            <select id="mStatus" class="form-control">
+              <option value="confirmed">Confirmado</option>
+              <option value="pending">Pendente</option>
+            </select>
           </div>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div class="form-group">
-              <label>Data Início</label>
-              <input type="date" id="blockStartDate" required>
-            </div>
-            <div class="form-group">
-              <label>Data Fim (opcional)</label>
-              <input type="date" id="blockEndDate">
-            </div>
+          <div class="form-group">
+            <label>Notas (opcional)</label>
+            <input type="text" id="mNotes" class="form-control" placeholder="Qualquer observação...">
           </div>
-          
-          <button type="submit" class="btn">
-            <i class="fas fa-ban"></i> Bloquear
-          </button>
-        </form>
-
-        <h4 style="margin-top: 30px;">Datas Bloqueadas</h4>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Descrição</th>
-              <th>Período</th>
-              <th>Ação</th>
-            </tr>
-          </thead>
-          <tbody id="blockedDatesBody">
-            <tr>
-              <td colspan="3" style="text-align: center; padding: 20px;">
-                Nenhuma data bloqueada
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary" onclick="saveManualBooking()">
+              <i class="fas fa-save"></i> Guardar Reserva
+            </button>
+            <button class="btn btn-ghost" onclick="clearManualForm()">
+              <i class="fas fa-eraser"></i> Limpar
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
-  </div>
+    <!-- ─── TAB: DIAS BLOQUEADOS ─── -->
+    <div id="tabBlocked" class="tab-view">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
 
-  <!-- Modal de Detalhes da Reserva -->
-  <div id="bookingDetailModal" class="booking-detail-modal">
-    <div class="booking-detail-content">
-      <div class="booking-detail-header">
-        <h2 class="booking-detail-title">
-          <i class="fas fa-calendar-check"></i> Detalhes da Reserva
-        </h2>
-        <button onclick="closeBookingDetail()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
+        <!-- Formulário bloquear -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-ban"></i> Bloquear Dia(s)</h3>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-group">
+              <label>Motivo *</label>
+              <input type="text" id="blockDesc" class="form-control" placeholder="Ex: Feriado, Férias, Formação...">
+            </div>
+            <div class="form-group">
+              <label>Tipo</label>
+              <select id="blockType" class="form-control" onchange="toggleBlockEndDate()">
+                <option value="single">Dia único</option>
+                <option value="range">Período</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Data *</label>
+              <input type="date" id="blockStart" class="form-control">
+            </div>
+            <div class="form-group" id="blockEndGroup" style="display:none;">
+              <label>Data Fim *</label>
+              <input type="date" id="blockEnd" class="form-control">
+            </div>
+            <button class="btn btn-danger" onclick="addBlockedDate()" style="align-self:flex-start;">
+              <i class="fas fa-ban"></i> Bloquear
+            </button>
+          </div>
+        </div>
 
-      <div id="bookingDetailContent">
-        <!-- Conteúdo será preenchido dinamicamente -->
+        <!-- Lista bloqueados -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-calendar-times"></i> Dias Bloqueados</h3>
+          </div>
+          <div class="card-body">
+            <div id="blockedList" style="display:flex;flex-direction:column;gap:8px;">
+              <p style="color:var(--white-dim);font-size:0.85rem;">Nenhum dia bloqueado.</p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
-  </div>
 
-  <!-- Scripts -->
-  <script src="js/api.js"></script>
-  <script src="js/admin-calendar.js"></script>
-  <script src="js/admin.js"></script>
+    <!-- ─── TAB: CONFIGURAÇÕES ─── -->
+    <div id="tabSettings" class="tab-view">
+      <div class="settings-grid">
+
+        <!-- Horários -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-clock"></i> Horário de Trabalho</h3>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:16px;">
+            <div class="settings-row">
+              <div class="form-group">
+                <label>Abertura</label>
+                <input type="time" id="cfgOpen" class="form-control" value="09:00">
+              </div>
+              <div class="form-group">
+                <label>Fecho</label>
+                <input type="time" id="cfgClose" class="form-control" value="19:00">
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="form-group">
+                <label>Pausa — Início</label>
+                <input type="time" id="cfgBreakStart" class="form-control" value="13:00">
+              </div>
+              <div class="form-group">
+                <label>Pausa — Fim</label>
+                <input type="time" id="cfgBreakEnd" class="form-control" value="14:00">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Dias de Trabalho</label>
+              <div class="working-days">
+                <label class="day-toggle"><input type="checkbox" name="workingDays" value="0"> Dom</label>
+                <label class="day-toggle"><input type="checkbox" name="workingDays" value="1"> Seg</label>
+                <label class="day-toggle"><input type="checkbox" name="workingDays" value="2" checked> Ter</label>
+                <label class="day-toggle"><input type="checkbox" name="workingDays" value="3" checked> Qua</label>
+                <label class="day-toggle"><input type="checkbox" name="workingDays" value="4" checked> Qui</label>
+                <label class="day-toggle"><input type="checkbox" name="workingDays" value="5" checked> Sex</label>
+                <label class="day-toggle"><input type="checkbox" name="workingDays" value="6" checked> Sáb</label>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="saveWorkingHours()" style="align-self:flex-start;">
+              <i class="fas fa-save"></i> Guardar Horários
+            </button>
+          </div>
+        </div>
+
+        <!-- WhatsApp -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fab fa-whatsapp"></i> WhatsApp</h3>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-group">
+              <label>Número</label>
+              <input type="tel" id="cfgWhatsapp" class="form-control" placeholder="+351918749689">
+            </div>
+            <div class="form-group">
+              <label>Mensagem Padrão</label>
+              <textarea id="cfgWhatsappMsg" class="form-control" rows="3"
+                style="resize:vertical;"
+                placeholder="Olá {nome}, a sua reserva está confirmada para {data} às {hora}."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="saveWhatsAppSettings()" style="align-self:flex-start;">
+              <i class="fas fa-save"></i> Guardar
+            </button>
+          </div>
+        </div>
+
+        <!-- API Status -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-server"></i> Estado do Sistema</h3>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div id="apiStatusDisplay" style="color:var(--white-dim);font-size:0.85rem;">
+              <i class="fas fa-spinner fa-spin"></i> A verificar...
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn btn-ghost btn-sm" onclick="checkAPIStatus()">
+                <i class="fas fa-sync"></i> Testar Ligação
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══════════════ MODAL: DETALHES RESERVA ═══════════════ -->
+<div class="modal-overlay" id="modalBookingDetail">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fas fa-calendar-check"></i> Detalhes da Reserva</h3>
+      <button class="modal-close" onclick="closeModal('modalBookingDetail')">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body" id="modalBookingDetailBody">
+    </div>
+    <div class="modal-footer" id="modalBookingDetailFooter">
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TOAST CONTAINER ═══════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Scripts -->
+<script src="js/api.js"></script>
+<script src="js/admin.js"></script>
 </body>
 </html>
