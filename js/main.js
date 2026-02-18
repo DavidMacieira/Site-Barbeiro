@@ -159,15 +159,243 @@ function showSkeletonLoader() {
   }
 }
 
+// ==================== CALENDÁRIO VISUAL ====================
+const Calendar = {
+  currentYear: new Date().getFullYear(),
+  currentMonth: new Date().getMonth(),
+  selectedDate: null,
+  bookedDates: {}, // { 'YYYY-MM-DD': slotsOcupados }
+  blockedDates: [], // datas bloqueadas manualmente
+  CLOSED_DAYS: [0, 1], // domingo=0, segunda=1
+
+  // Inicializar e injetar calendário no modal
+  async init() {
+    const bookingDate = document.getElementById('bookingDate');
+    if (!bookingDate) return;
+
+    // Esconder o input nativo
+    bookingDate.style.display = 'none';
+
+    // Criar o widget
+    const wrapper = document.createElement('div');
+    wrapper.id = 'calendarWidget';
+    wrapper.className = 'cal-widget';
+    bookingDate.parentNode.insertBefore(wrapper, bookingDate.nextSibling);
+
+    // Selecionar hoje por padrão (ou próximo dia útil)
+    const todayDate = new Date();
+    this.selectedDate = this.nextWorkingDay(todayDate);
+    bookingDate.value = this.toISO(this.selectedDate);
+    this.currentYear = this.selectedDate.getFullYear();
+    this.currentMonth = this.selectedDate.getMonth();
+
+    // Carregar datas bloqueadas do servidor
+    try {
+      const blocked = await barbeariaAPI.getBlockedDates();
+      if (Array.isArray(blocked)) {
+        this.blockedDates = blocked.map(b => b.startDate);
+      }
+    } catch(e) { /* silencioso */ }
+
+    await this.loadMonthBookings();
+    this.render();
+  },
+
+  // Converter Date para YYYY-MM-DD
+  toISO(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  },
+
+  // Próximo dia útil a partir de uma data
+  nextWorkingDay(date) {
+    const d = new Date(date);
+    while (this.CLOSED_DAYS.includes(d.getDay())) {
+      d.setDate(d.getDate() + 1);
+    }
+    return d;
+  },
+
+  // Verificar se uma data é dia fechado
+  isClosed(date) {
+    return this.CLOSED_DAYS.includes(date.getDay());
+  },
+
+  // Verificar se uma data está bloqueada manualmente
+  isBlocked(isoDate) {
+    return this.blockedDates.includes(isoDate);
+  },
+
+  // Verificar se uma data é passada (anterior a hoje)
+  isPast(date) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const d = new Date(date);
+    d.setHours(0,0,0,0);
+    return d < today;
+  },
+
+  // Carregar reservas do mês atual para mostrar indicadores
+  async loadMonthBookings() {
+    try {
+      const service = document.getElementById('serviceSelect')?.value;
+      const duration = service ? parseInt(service.split('|')[2]) || 30 : 30;
+
+      // Para cada dia do mês, verificar disponibilidade em background
+      // (sem bloquear o render — fazemos lazy)
+      this.bookedDates = {};
+    } catch(e) { /* silencioso */ }
+  },
+
+  // Avançar/recuar mês
+  prevMonth() {
+    this.currentMonth--;
+    if (this.currentMonth < 0) { this.currentMonth = 11; this.currentYear--; }
+    this.render();
+  },
+  nextMonth() {
+    this.currentMonth++;
+    if (this.currentMonth > 11) { this.currentMonth = 0; this.currentYear++; }
+    this.render();
+  },
+
+  // Selecionar um dia
+  async selectDay(isoDate, el) {
+    // Remover seleção anterior
+    document.querySelectorAll('.cal-day.selected').forEach(d => d.classList.remove('selected'));
+    el.classList.add('selected');
+
+    this.selectedDate = new Date(isoDate + 'T12:00:00');
+    document.getElementById('bookingDate').value = isoDate;
+
+    // Recarregar time slots
+    await loadAvailableTimeSlots();
+  },
+
+  // Renderizar o calendário
+  render() {
+    const widget = document.getElementById('calendarWidget');
+    if (!widget) return;
+
+    const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+    const firstDay = new Date(this.currentYear, this.currentMonth, 1);
+    const lastDay  = new Date(this.currentYear, this.currentMonth + 1, 0);
+    const startDow = firstDay.getDay(); // 0=Dom
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    // Não permitir navegar para meses passados
+    const nowMonth = new Date(); nowMonth.setDate(1); nowMonth.setHours(0,0,0,0);
+    const viewMonth = new Date(this.currentYear, this.currentMonth, 1);
+    const isPrevDisabled = viewMonth <= nowMonth;
+
+    let html = `
+      <div class="cal-header">
+        <button type="button" class="cal-nav" onclick="Calendar.prevMonth()" ${isPrevDisabled ? 'disabled' : ''} aria-label="Mês anterior">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="cal-month-label">${MONTHS_PT[this.currentMonth]} ${this.currentYear}</span>
+        <button type="button" class="cal-nav" onclick="Calendar.nextMonth()" aria-label="Mês seguinte">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+      <div class="cal-grid">
+    `;
+
+    // Cabeçalho dias da semana
+    DAYS_PT.forEach((d, i) => {
+      const isClosed = this.CLOSED_DAYS.includes(i);
+      html += `<div class="cal-dow ${isClosed ? 'cal-dow--closed' : ''}">${d}</div>`;
+    });
+
+    // Espaços vazios antes do primeiro dia
+    for (let i = 0; i < startDow; i++) {
+      html += `<div class="cal-day cal-day--empty"></div>`;
+    }
+
+    // Dias do mês
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(this.currentYear, this.currentMonth, d);
+      const iso = this.toISO(date);
+      const past = this.isPast(date);
+      const closed = this.isClosed(date);
+      const blocked = this.isBlocked(iso);
+      const isSelected = this.selectedDate && this.toISO(this.selectedDate) === iso;
+      const isToday = this.toISO(today) === iso;
+      const hasBookings = this.bookedDates[iso] && this.bookedDates[iso] > 0;
+
+      let cls = 'cal-day';
+      let title = '';
+      let clickable = true;
+
+      if (past) {
+        cls += ' cal-day--past';
+        clickable = false;
+        title = 'Data passada';
+      } else if (closed) {
+        cls += ' cal-day--closed';
+        clickable = false;
+        title = 'Encerrado (Dom/Seg)';
+      } else if (blocked) {
+        cls += ' cal-day--blocked';
+        clickable = false;
+        title = 'Data indisponível';
+      } else {
+        cls += ' cal-day--open';
+      }
+
+      if (isSelected) cls += ' selected';
+      if (isToday) cls += ' cal-day--today';
+      if (hasBookings && !past && !closed && !blocked) cls += ' cal-day--has-bookings';
+
+      const onclick = clickable
+        ? `onclick="Calendar.selectDay('${iso}', this)"`
+        : '';
+
+      let inner = `<span class="cal-day-num">${d}</span>`;
+      if (closed || blocked) inner += `<span class="cal-day-x" aria-hidden="true"></span>`;
+      if (hasBookings && !past && !closed && !blocked) inner += `<span class="cal-day-dot" aria-hidden="true"></span>`;
+
+      html += `<div class="${cls}" ${onclick} title="${title}" role="${clickable ? 'button' : ''}" tabindex="${clickable ? '0' : '-1'}" onkeydown="if(event.key==='Enter'&&${clickable})Calendar.selectDay('${iso}',this)">${inner}</div>`;
+    }
+
+    html += `</div>`;
+
+    // Legenda
+    html += `
+      <div class="cal-legend">
+        <span class="cal-legend-item"><span class="cal-legend-dot cal-legend-dot--closed"></span> Encerrado</span>
+        <span class="cal-legend-item"><span class="cal-legend-dot cal-legend-dot--open"></span> Disponível</span>
+        <span class="cal-legend-item"><span class="cal-legend-dot cal-legend-dot--selected"></span> Selecionado</span>
+      </div>
+    `;
+
+    widget.innerHTML = html;
+  },
+
+  // Atualizar indicadores de reservas para um mês (chamado após carregar slots)
+  markDateBookings(isoDate, occupiedCount) {
+    this.bookedDates[isoDate] = occupiedCount;
+    // Re-renderizar só o dia específico seria mais eficiente,
+    // mas re-renderizar o calendário inteiro é mais simples
+    const widget = document.getElementById('calendarWidget');
+    if (widget) this.render();
+  }
+};
+
 // ==================== INICIALIZAÇÃO ====================
 document.addEventListener('DOMContentLoaded', function() {
   console.log('✅ DOM completamente carregado');
   
-  // Configurar data mínima (hoje)
-  const today = new Date().toISOString().split('T')[0];
+  // Inicializar calendário visual (substitui o input nativo)
   const bookingDate = document.getElementById('bookingDate');
   if (bookingDate) {
-    bookingDate.min = today;
+    // O calendário será inicializado quando o modal abrir (openBookingModal)
+    // Para já, apenas configurar o valor padrão
+    const today = new Date().toISOString().split('T')[0];
     bookingDate.value = today;
     bookingDate.addEventListener('change', loadAvailableTimeSlots);
   }
@@ -360,22 +588,24 @@ function openBookingModal(serviceName, price, duration) {
     }
   }
   
-  // Data de hoje
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('bookingDate').value = today;
-  
-  // Validar data
-  const dateValidation = { valid: true, message: 'Data válida' };
-  ValidationSystem.updateFieldUI('bookingDate', dateValidation);
-  
-  // Carregar slots disponíveis
-  setTimeout(() => {
-    loadAvailableTimeSlots();
-  }, 500);
-  
   // Mostrar modal com animação
   modal.style.display = 'block';
   document.body.style.overflow = 'hidden';
+
+  // Inicializar/re-renderizar o calendário visual
+  setTimeout(async () => {
+    const widget = document.getElementById('calendarWidget');
+    if (!widget) {
+      await Calendar.init();
+    } else {
+      Calendar.render();
+    }
+    // Se já há serviço selecionado, carregar slots para a data activa
+    const bookingDate = document.getElementById('bookingDate');
+    if (bookingDate && bookingDate.value) {
+      await loadAvailableTimeSlots();
+    }
+  }, 80);
   
   console.log('✅ Modal aberto');
 }
@@ -582,7 +812,7 @@ async function confirmBooking() {
       
       // Obter configurações do WhatsApp
       const settings = await barbeariaAPI.getSettings();
-      const whatsappNumber = settings.whatsapp?.number || '+351919241169';
+      const whatsappNumber = settings.whatsapp?.number || '+351918749689';
       const cleanNumber = whatsappNumber.replace(/\D/g, '');
       
       // Criar mensagem
@@ -690,12 +920,18 @@ async function loadAvailableTimeSlots() {
     const result = await barbeariaAPI.getAvailableSlots(date, parseInt(serviceDuration));
     console.log('📊 Slots recebidos:', result);
     
-    let slots = Array.isArray(result) ? result : (result?.slots || []);
+    let slots = result?.slots ?? []
     
-    if (!slots || slots.length === 0) {
-      availableEl.style.display = 'none';
-      if (noSlotsEl) noSlotsEl.style.display = 'block';
-      return;
+    // Se a API não retornou slots (falha de rede, CORS, etc.), usar fallback local
+    if (!Array.isArray(slots)) {
+      console.warn('Slots Inválidos da API');
+      const fallback = barbeariaAPI.getFallbackSlots ? barbeariaAPI.getFallbackSlots() : [];
+      if (fallback.length === 0) {
+        availableEl.style.display = 'none';
+        if (noSlotsEl) noSlotsEl.style.display = 'block';
+        return;
+      }
+      slots = fallback;
     }
 
     // Normalizar formato
@@ -711,7 +947,7 @@ async function loadAvailableTimeSlots() {
       if (!isToday) return true;
       const [hours, minutes] = slot.time.split(':').map(Number);
       const slotMinutes = (hours * 60) + minutes;
-      return slotMinutes > (currentMinutes + 15);
+      return slotMinutes > currentMinutes;
     });
 
     if (validSlots.length === 0) {
@@ -745,17 +981,18 @@ async function loadAvailableTimeSlots() {
         button.className += ' time-slot';
 
         button.onclick = () => {
-          document.querySelectorAll('.time-slot').forEach(btn => {
-            if (!btn.disabled) btn.classList.remove('selected');
-          });
+    document.querySelectorAll('.time-slot').forEach(btn => {
+        if (!btn.disabled) btn.classList.remove('selected');
+    });
 
-          button.classList.add('selected');
-          selectedTimeSlot = slot.time;
+    button.classList.add('selected');
+    selectedTimeSlot = slot.time;
 
-          if (timeSelect) {
-            timeSelect.value = slot.time;
-          }
-        };
+    if (timeSelect) {
+        timeSelect.value = slot.time;
+        timeSelect.dispatchEvent(new Event('change')); // <-- LINHA CRÍTICA
+    }
+};
 
         // Adicionar ao select
         if (timeSelect) {
@@ -768,6 +1005,13 @@ async function loadAvailableTimeSlots() {
 
       availableEl.appendChild(button);
     });
+
+    // Marcar no calendário quantos slots estão ocupados neste dia
+    const occupiedCount = validSlots.filter(s => s.available === false).length;
+    const date = document.getElementById('bookingDate')?.value;
+    if (date && occupiedCount > 0) {
+      Calendar.markDateBookings(date, occupiedCount);
+    }
 
   } catch (error) {
     console.error('❌ Erro ao carregar slots:', error);

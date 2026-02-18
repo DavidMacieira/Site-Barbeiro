@@ -1,7 +1,7 @@
 // api.js - SISTEMA COMPLETO PARA BARBEARIA REAL
 
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxhqtVh9ySeLHyn-0csDap6-psVGCUSpl92URmMoQhicFvb3jQ6fFSukuLYh_HalMjw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwYK9kOoX5L32sED_uu6BEUUD3BZ-QKMxNz6QxHdpFYndBt9M7BWLqj8UEvxNz9yHWD/exec';
 
 // Credenciais admin
 const ADMIN_CREDENTIALS = {
@@ -37,23 +37,38 @@ async testConnection() {
       return { success: false, error: error.message };
     }
   }
-
   async getAvailableSlots(date, serviceDuration = 30) {
+  try {
+    console.log('🕐 Buscando slots para', date);
+    const url = `${this.API_URL}?action=getAvailableSlots&date=${encodeURIComponent(date)}&duration=${serviceDuration}`;
+
+    // Adicionado redirect: 'follow' explicitamente
+    const resp = await fetch(url, { mode: 'cors', redirect: 'follow' }); 
+    const text = await resp.text();
+
+    let data;
     try {
-      console.log('🕐 Buscando slots para', date);
-      const url = `${this.API_URL}?action=getAvailableSlots&date=${date}&duration=${serviceDuration}`;
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      if (data.success && data.slots) {
-        return data.slots;
-      }
-      return [];
-    } catch (error) {
-      console.error('Erro slots:', error);
-      return this.getFallbackSlots();
+      data = JSON.parse(text);
+    } catch (e) {
+      console.warn('Resposta não-JSON, usando fallback local.');
+      // IMPORTANTE: Se o backend falhar totalmente, usamos o fallback
+      return { success: true, slots: this.getFallbackSlots() }; 
     }
+
+    if (data && data.success) {
+      // Se a API diz que é sucesso, usamos os slots dela (mesmo que vazios)
+      // Se estiver vazio, é porque o dia está fechado ou cheio.
+      return { success: true, slots: data.slots };
+    }
+
+    return { success: false, slots: [] };
+
+  } catch (error) {
+    console.error('Erro slots:', error);
+    // Em caso de erro de rede, fallback local permite testar o frontend
+    return { success: true, slots: this.getFallbackSlots() };
   }
+}
 
   async checkAvailability(date, time, duration = 30) {
     try {
@@ -324,7 +339,7 @@ async getBookings(filters = {}) {
         workingDays: [2, 3, 4, 5, 6]
       },
       whatsapp: {
-        number: '+351919241169'
+        number: '+351918749689'
       }
     };
   }

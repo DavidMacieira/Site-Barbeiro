@@ -1291,3 +1291,244 @@ footer {
     padding-right: max(28px, env(safe-area-inset-right));
   }
 }
+
+/* ── CALENDÁRIO VISUAL ────────────────────────────────────── */
+.form-group--calendar { margin-bottom: 16px; }
+
+.cal-widget {
+  background: var(--black-3);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--r-md);
+  padding: 14px 14px 10px;
+  user-select: none;
+}
+
+/* Header nav */
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 8px;
+}
+
+.cal-month-label {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--white);
+  letter-spacing: 0.04em;
+  text-align: center;
+  flex: 1;
+}
+
+.cal-nav {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--r-sm);
+  color: var(--white-dim);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.cal-nav:hover:not(:disabled) {
+  background: var(--gold-glow);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.cal-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Grid */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+/* Day-of-week headers */
+.cal-dow {
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--white-dim);
+  padding: 4px 0 8px;
+}
+.cal-dow--closed {
+  color: rgba(176,169,158,0.4);
+}
+
+/* Day cells */
+.cal-day {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: all 0.18s;
+  overflow: hidden;
+}
+
+.cal-day-num {
+  position: relative;
+  z-index: 1;
+  line-height: 1;
+}
+
+.cal-day--empty { background: none; }
+
+/* Dias passados */
+.cal-day--past {
+  color: rgba(176,169,158,0.25);
+  cursor: not-allowed;
+}
+
+/* Dias fechados (Dom/Seg) — acinzentados com X */
+.cal-day--closed {
+  background: rgba(255,255,255,0.03);
+  color: rgba(176,169,158,0.3);
+  cursor: not-allowed;
+}
+.cal-day--closed .cal-day-x,
+.cal-day--blocked .cal-day-x {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}
+.cal-day--closed .cal-day-x::before,
+.cal-day--closed .cal-day-x::after,
+.cal-day--blocked .cal-day-x::before,
+.cal-day--blocked .cal-day-x::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 55%;
+  height: 1.5px;
+  background: rgba(176,169,158,0.18);
+  border-radius: 1px;
+}
+.cal-day--closed .cal-day-x::before,
+.cal-day--blocked .cal-day-x::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.cal-day--closed .cal-day-x::after,
+.cal-day--blocked .cal-day-x::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* Dias bloqueados manualmente */
+.cal-day--blocked {
+  background: rgba(229,57,53,0.06);
+  color: rgba(229,57,53,0.35);
+  cursor: not-allowed;
+}
+
+/* Dias disponíveis */
+.cal-day--open {
+  color: var(--white);
+  cursor: pointer;
+  background: rgba(255,255,255,0.03);
+}
+.cal-day--open:hover {
+  background: var(--gold-glow);
+  color: var(--gold);
+}
+
+/* Hoje */
+.cal-day--today:not(.cal-day--closed):not(.cal-day--blocked):not(.cal-day--past) {
+  border: 1px solid rgba(201,169,110,0.35);
+}
+.cal-day--today .cal-day-num {
+  font-weight: 700;
+}
+
+/* Selecionado */
+.cal-day.selected,
+.cal-day--open.selected {
+  background: var(--gold) !important;
+  color: var(--black) !important;
+  font-weight: 700;
+}
+.cal-day.selected .cal-day-dot { background: var(--black); }
+
+/* Dot — dia com reservas existentes */
+.cal-day-dot {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: 0.7;
+}
+
+/* Legenda */
+.cal-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-wrap: wrap;
+}
+.cal-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  color: var(--white-dim);
+  letter-spacing: 0.05em;
+}
+.cal-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.cal-legend-dot--closed {
+  background: rgba(255,255,255,0.08);
+  position: relative;
+  overflow: hidden;
+}
+.cal-legend-dot--closed::before,
+.cal-legend-dot--closed::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 80%; height: 1.5px;
+  background: rgba(176,169,158,0.35);
+}
+.cal-legend-dot--closed::before { transform: translate(-50%,-50%) rotate(45deg); }
+.cal-legend-dot--closed::after  { transform: translate(-50%,-50%) rotate(-45deg); }
+.cal-legend-dot--open     { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
+.cal-legend-dot--selected { background: var(--gold); }
+
+/* Responsivo mobile */
+@media (max-width: 480px) {
+  .cal-widget { padding: 12px 10px 8px; }
+  .cal-day { font-size: 0.75rem; border-radius: 5px; }
+  .cal-dow { font-size: 0.6rem; padding-bottom: 6px; }
+  .cal-month-label { font-size: 0.95rem; }
+  .cal-legend { gap: 10px; }
+  .cal-legend-item { font-size: 0.62rem; }
+}

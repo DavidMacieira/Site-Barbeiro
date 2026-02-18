@@ -407,7 +407,7 @@ async function loadSettings() {
     }
     
     if (settings.whatsapp) {
-      document.getElementById('whatsappNumber').value = settings.whatsapp.number || '+351919241169';
+      document.getElementById('whatsappNumber').value = settings.whatsapp.number || '+351918749689';
       if (settings.whatsapp.mensagem_padrao) {
         document.getElementById('whatsappMessage').value = settings.whatsapp.mensagem_padrao;
       }
