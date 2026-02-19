@@ -58,10 +58,13 @@ async testConnection() {
     if (data && data.success) {
       // Se a API diz que é sucesso, usamos os slots dela (mesmo que vazios)
       // Se estiver vazio, é porque o dia está fechado ou cheio.
-      return { success: true, slots: data.slots };
+      console.log(`✅ API retornou ${data.slots?.length ?? 0} slots. Razão: ${data.reason || 'OK'}`);
+      return { success: true, slots: data.slots, reason: data.reason };
     }
 
-    return { success: false, slots: [] };
+    // API respondeu mas com erro — usar fallback local para não bloquear o utilizador
+    console.warn('⚠️ API retornou success:false. Usando fallback local. Erro:', data?.error);
+    return { success: true, slots: this.getFallbackSlots(), fromFallback: true };
 
   } catch (error) {
     console.error('Erro slots:', error);

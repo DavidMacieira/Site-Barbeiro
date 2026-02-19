@@ -182,9 +182,9 @@ const Calendar = {
     wrapper.className = 'cal-widget';
     bookingDate.parentNode.insertBefore(wrapper, bookingDate.nextSibling);
 
-    // Selecionar hoje por padrão (ou próximo dia útil)
+    // Selecionar hoje por padrão — mas se já passou o horário de fecho, avança para amanhã
     const todayDate = new Date();
-    this.selectedDate = this.nextWorkingDay(todayDate);
+    this.selectedDate = this.nextAvailableDay(todayDate);
     bookingDate.value = this.toISO(this.selectedDate);
     this.currentYear = this.selectedDate.getFullYear();
     this.currentMonth = this.selectedDate.getMonth();
@@ -216,6 +216,21 @@ const Calendar = {
       d.setDate(d.getDate() + 1);
     }
     return d;
+  },
+
+  // Se hoje já passou o horário de fecho (19h), avança para o próximo dia útil
+  nextAvailableDay(date) {
+    const d = new Date(date);
+    const WORKING_END_HOUR = 19;
+    const isAfterHours = d.getHours() >= WORKING_END_HOUR;
+
+    // Se hoje é dia de trabalho mas já fechou, avançar para amanhã
+    if (!this.CLOSED_DAYS.includes(d.getDay()) && isAfterHours) {
+      d.setDate(d.getDate() + 1);
+    }
+
+    // Saltar fins-de-semana/fechados
+    return this.nextWorkingDay(d);
   },
 
   // Verificar se uma data é dia fechado
@@ -463,8 +478,9 @@ document.addEventListener('DOMContentLoaded', function() {
       };
       ValidationSystem.updateFieldUI('serviceSelect', validation);
       
-      // Recarregar slots quando mudar serviço
-      if (e.target.value) {
+      // Recarregar slots quando mudar serviço (só se o modal estiver visível)
+      const modal = document.getElementById('bookingModal');
+      if (e.target.value && modal && modal.style.display !== 'none') {
         loadAvailableTimeSlots();
       }
     });
@@ -585,6 +601,9 @@ function openBookingModal(serviceName, price, duration) {
       // Validar serviço
       const validation = { valid: true, message: 'Serviço selecionado' };
       ValidationSystem.updateFieldUI('serviceSelect', validation);
+      
+      // NÃO disparar change aqui — loadAvailableTimeSlots será chamado no setTimeout abaixo
+      // após o calendário estar inicializado com a data correcta
     }
   }
   
@@ -598,11 +617,19 @@ function openBookingModal(serviceName, price, duration) {
     if (!widget) {
       await Calendar.init();
     } else {
-      Calendar.render();
+      // Na reabertura, verificar se a data guardada já passou; se sim, reinicializar
+      const bookingDateEl = document.getElementById('bookingDate');
+      const storedISO = bookingDateEl ? bookingDateEl.value : '';
+      const isPastDate = storedISO && Calendar.isPast(new Date(storedISO + 'T12:00:00'));
+      if (isPastDate || !storedISO) {
+        await Calendar.init();
+      } else {
+        Calendar.render();
+      }
     }
-    // Se já há serviço selecionado, carregar slots para a data activa
-    const bookingDate = document.getElementById('bookingDate');
-    if (bookingDate && bookingDate.value) {
+    // Recarregar slots após o calendário estar pronto (garante data correcta)
+    const bookingDateFinal = document.getElementById('bookingDate');
+    if (bookingDateFinal && bookingDateFinal.value) {
       await loadAvailableTimeSlots();
     }
   }, 80);
@@ -920,9 +947,21 @@ async function loadAvailableTimeSlots() {
     const result = await barbeariaAPI.getAvailableSlots(date, parseInt(serviceDuration));
     console.log('📊 Slots recebidos:', result);
     
-    let slots = result?.slots ?? []
+    let slots = result?.slots ?? [];
+
+    // Se a API falhou (success false ou slots vazio por erro), usar fallback
+    if (!result?.success && (!Array.isArray(slots) || slots.length === 0)) {
+      console.warn('⚠️ API sem sucesso, usando fallback local');
+      const fallback = barbeariaAPI.getFallbackSlots ? barbeariaAPI.getFallbackSlots() : [];
+      if (fallback.length === 0) {
+        availableEl.style.display = 'none';
+        if (noSlotsEl) noSlotsEl.style.display = 'block';
+        return;
+      }
+      slots = fallback;
+    }
     
-    // Se a API não retornou slots (falha de rede, CORS, etc.), usar fallback local
+    // Se a API retornou slots não é array, usar fallback
     if (!Array.isArray(slots)) {
       console.warn('Slots Inválidos da API');
       const fallback = barbeariaAPI.getFallbackSlots ? barbeariaAPI.getFallbackSlots() : [];
@@ -952,7 +991,15 @@ async function loadAvailableTimeSlots() {
 
     if (validSlots.length === 0) {
       availableEl.style.display = 'none';
-      if (noSlotsEl) noSlotsEl.style.display = 'block';
+      if (noSlotsEl) {
+        // Mensagem específica se o problema é a hora (após fecho hoje)
+        if (isToday) {
+          noSlotsEl.innerHTML = `<i class="fas fa-moon"></i> Horário de hoje já encerrado. Por favor, selecione outro dia.`;
+        } else {
+          noSlotsEl.innerHTML = `<i class="fas fa-calendar-times"></i> Não há horários disponíveis nesta data.`;
+        }
+        noSlotsEl.style.display = 'block';
+      }
       return;
     }
 
@@ -1008,9 +1055,9 @@ async function loadAvailableTimeSlots() {
 
     // Marcar no calendário quantos slots estão ocupados neste dia
     const occupiedCount = validSlots.filter(s => s.available === false).length;
-    const date = document.getElementById('bookingDate')?.value;
-    if (date && occupiedCount > 0) {
-      Calendar.markDateBookings(date, occupiedCount);
+    const currentDateValue = document.getElementById('bookingDate')?.value;
+    if (currentDateValue && occupiedCount > 0) {
+      Calendar.markDateBookings(currentDateValue, occupiedCount);
     }
 
   } catch (error) {
