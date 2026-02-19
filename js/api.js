@@ -1,7 +1,7 @@
 // api.js - SISTEMA COMPLETO PARA BARBEARIA REAL
 
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwYK9kOoX5L32sED_uu6BEUUD3BZ-QKMxNz6QxHdpFYndBt9M7BWLqj8UEvxNz9yHWD/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx_45-2GhpTXefOdUKL4mQsHTwJ1g8FKR7Ir-dO6sVbK7qoZjlYgsDqcYaUmM6hX6PP/exec';
 
 // Credenciais admin
 const ADMIN_CREDENTIALS = {
@@ -75,13 +75,16 @@ async testConnection() {
 
   async checkAvailability(date, time, duration = 30) {
     try {
-      console.log('🔍 Verificando disponibilidade:', date, time);
-      const url = `${this.API_URL}?action=checkAvailability&date=${date}&time=${time}&duration=${duration}`;
-      const response = await fetch(url);
-      return await response.json();
+      console.log('🔍 Verificando disponibilidade:', date, time, duration + 'min');
+      const url = `${this.API_URL}?action=checkAvailability&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&duration=${duration}`;
+      const response = await fetch(url, { mode: 'cors', redirect: 'follow' });
+      const data = await response.json();
+      console.log('🔍 Resultado disponibilidade:', data);
+      return data;
     } catch (error) {
       console.error('Erro disponibilidade:', error);
-      return { success: true, available: true }; // Em caso de erro, permitir
+      // Em caso de erro de rede, bloquear por segurança (não permitir duplicados)
+      return { success: false, available: false };
     }
   }
 

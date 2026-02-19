@@ -783,25 +783,29 @@ async function confirmBooking() {
       return;
     }
     
-    // VERIFICAR DISPONIBILIDADE
+    // VERIFICAR DISPONIBILIDADE NO SERVIDOR (antes de gravar)
+    btn.textContent = 'A verificar disponibilidade...';
     const availability = await barbeariaAPI.checkAvailability(
-      date, 
-      time, 
+      date,
+      time,
       parseInt(serviceDuration)
     );
-    
+
     if (!availability || !availability.available) {
       notificationSystem.show(
-        'Este horário acabou de ser reservado por outro cliente. Por favor, selecione outro horário.',
+        availability?.success === false
+          ? 'Não foi possível verificar o horário. Verifique a sua ligação e tente novamente.'
+          : 'Este horário já foi reservado por outro cliente. Por favor, escolha outro horário.',
         'error',
-        { 
-          title: '⏰ HORÁRIO INDISPONÍVEL',
+        {
+          title: availability?.success === false ? '⚠️ ERRO DE REDE' : '⏰ HORÁRIO INDISPONÍVEL',
           duration: 6000
         }
       );
-      
-      loadAvailableTimeSlots(); // Recarregar slots
-      
+
+      // Recarregar slots para mostrar o slot como ocupado
+      await loadAvailableTimeSlots();
+
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;
@@ -890,10 +894,21 @@ O cliente será contactado para confirmação final.`;
       
     } else {
       const errorMsg = result?.error || 'Erro desconhecido ao salvar reserva';
-      notificationSystem.showError(
-        'Não foi possível concluir sua reserva. Por favor, tente novamente.',
-        { message: errorMsg }
-      );
+
+      // Se o erro é de conflito (horário ocupado entre checkAvailability e saveBooking)
+      if (errorMsg.toLowerCase().includes('horário') || errorMsg.toLowerCase().includes('reservado')) {
+        notificationSystem.show(
+          'Este horário acabou de ser reservado. Por favor, escolha outro horário.',
+          'error',
+          { title: '⏰ HORÁRIO OCUPADO', duration: 6000 }
+        );
+        await loadAvailableTimeSlots(); // Atualizar slots visualmente
+      } else {
+        notificationSystem.showError(
+          `Não foi possível concluir a sua reserva. ${errorMsg}`,
+          { message: errorMsg }
+        );
+      }
     }
     
   } catch (error) {
