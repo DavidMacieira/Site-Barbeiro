@@ -534,15 +534,15 @@ class NotificationSystem {
   /**
    * Notificação de sucesso para reserva
    */
-  showBookingSuccess(bookingData, whatsappURL) {
+  showBookingSuccess(bookingData) {
     const formattedDate = this.formatDate(bookingData.date);
     
     return this.show(
-      'Sua reserva foi confirmada com sucesso!',
+      'A sua marcação foi registada com sucesso!',
       'success',
       {
-        title: '✅ RESERVA CONFIRMADA',
-        duration: 10000,
+        title: '✅ MARCAÇÃO CONFIRMADA',
+        duration: 12000,
         booking: {
           name: bookingData.name,
           service: bookingData.service,
@@ -552,20 +552,55 @@ class NotificationSystem {
         },
         actions: [
           {
-            text: 'WhatsApp',
-            icon: 'fab fa-whatsapp',
-            class: 'btn-whatsapp',
-            onclick: `window.open('${whatsappURL}', '_blank')`
-          },
-          {
-            text: 'Adicionar ao Calendário',
+            text: 'Adicionar à Agenda',
             icon: 'fas fa-calendar-plus',
             class: 'btn-calendar',
-            onclick: `window.open('${this.generateCalendarURL(bookingData)}', '_blank')`
+            onclick: `notificationSystem.downloadICS(${JSON.stringify(bookingData)})`
           }
         ]
       }
     );
+  }
+
+  downloadICS(bookingData) {
+    const [year, month, day] = bookingData.date.split('-').map(Number);
+    const [hour, min] = bookingData.time.split(':').map(Number);
+    
+    const pad = n => String(n).padStart(2, '0');
+    const dtStart = `${year}${pad(month)}${pad(day)}T${pad(hour)}${pad(min)}00`;
+    
+    // Calcular fim (duração em minutos)
+    const duration = parseInt(bookingData.duration) || 30;
+    const endDate = new Date(year, month - 1, day, hour, min + duration);
+    const dtEnd = `${endDate.getFullYear()}${pad(endDate.getMonth()+1)}${pad(endDate.getDate())}T${pad(endDate.getHours())}${pad(endDate.getMinutes())}00`;
+    
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Barbearia João Angeiras//PT',
+      'BEGIN:VEVENT',
+      `DTSTART:${dtStart}`,
+      `DTEND:${dtEnd}`,
+      `SUMMARY:✂️ ${bookingData.service} - Barbearia João Angeiras`,
+      `DESCRIPTION:Marcação confirmada para ${bookingData.name}\nPreço: ${bookingData.price}€`,
+      'LOCATION:R. de 31 de Janeiro 183\, Póvoa de Varzim',
+      `UID:${bookingData.bookingId || Date.now()}@barbearia-joaoangeiras`,
+      'BEGIN:VALARM',
+      'TRIGGER:-PT60M',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:Lembrete: Marcação na Barbearia João Angeiras em 1 hora!',
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+    
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'marcacao-barbearia.ics';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   /**
@@ -631,19 +666,8 @@ class NotificationSystem {
     }
   }
 
-  generateCalendarURL(booking) {
-    const startDate = new Date(`${booking.date}T${booking.time}`);
-    const endDate = new Date(startDate.getTime() + (booking.duration * 60000));
-    
-    const format = (date) => {
-      return date.toISOString().replace(/-|:|\.\d+/g, '');
-    };
-
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Barbearia%20-%20${encodeURIComponent(booking.service)}&dates=${format(startDate)}/${format(endDate)}&details=Cliente:%20${encodeURIComponent(booking.name)}%0ATelefone:%20${encodeURIComponent(booking.phone)}&location=R.%20de%2031%20de%20Janeiro%20183%2C%20Póvoa%20de%20Varzim`;
-  }
 }
 
-// Instância global
 window.notificationSystem = new NotificationSystem();
 
 // Função de compatibilidade com código antigo

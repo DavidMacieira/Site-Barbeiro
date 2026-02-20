@@ -841,35 +841,12 @@ async function confirmBooking() {
         });
       }
       
-      // Obter configurações do WhatsApp
-      const settings = await barbeariaAPI.getSettings();
-      const whatsappNumber = settings.whatsapp?.number || '+351918749689';
-      const cleanNumber = whatsappNumber.replace(/\D/g, '');
-      
-      // Criar mensagem
-      const message = `✅ NOVA MARCAÇÃO - Barbearia João Angeiras
-
-👤 Cliente: ${name}
-✂️ Serviço: ${serviceName}
-💰 Preço: ${servicePrice}€
-📅 Data: ${new Date(date).toLocaleDateString('pt-PT')}
-🕐 Horário: ${time}
-📍 Local: R. de 31 de Janeiro 183, Póvoa de Varzim
-
-Por favor, confirme esta marcação respondendo SIM.
-O cliente será contactado para confirmação final.`;
-      
-      const whatsappURL = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
-      
-      // NOTIFICAÇÃO PROFISSIONAL DE SUCESSO
-      notificationSystem.showBookingSuccess(
-        {
-          ...bookingData,
-          date: date,
-          time: time
-        },
-        whatsappURL
-      );
+      // NOTIFICAÇÃO DE SUCESSO COM BOTÃO PARA AGENDA
+      notificationSystem.showBookingSuccess({
+        ...bookingData,
+        date: date,
+        time: time
+      });
       
       // Fechar modal
       closeBookingModal();
