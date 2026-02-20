@@ -563,44 +563,54 @@ class NotificationSystem {
   }
 
   downloadICS(bookingData) {
-    const [year, month, day] = bookingData.date.split('-').map(Number);
-    const [hour, min] = bookingData.time.split(':').map(Number);
-    
-    const pad = n => String(n).padStart(2, '0');
-    const dtStart = `${year}${pad(month)}${pad(day)}T${pad(hour)}${pad(min)}00`;
-    
-    // Calcular fim (duração em minutos)
-    const duration = parseInt(bookingData.duration) || 30;
-    const endDate = new Date(year, month - 1, day, hour, min + duration);
-    const dtEnd = `${endDate.getFullYear()}${pad(endDate.getMonth()+1)}${pad(endDate.getDate())}T${pad(endDate.getHours())}${pad(endDate.getMinutes())}00`;
-    
-    const ics = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//Barbearia João Angeiras//PT',
-      'BEGIN:VEVENT',
-      `DTSTART:${dtStart}`,
-      `DTEND:${dtEnd}`,
-      `SUMMARY:✂️ ${bookingData.service} - Barbearia João Angeiras`,
-      `DESCRIPTION:Marcação confirmada para ${bookingData.name}\nPreço: ${bookingData.price}€`,
-      'LOCATION:R. de 31 de Janeiro 183\, Póvoa de Varzim',
-      `UID:${bookingData.bookingId || Date.now()}@barbearia-joaoangeiras`,
-      'BEGIN:VALARM',
-      'TRIGGER:-PT60M',
-      'ACTION:DISPLAY',
-      'DESCRIPTION:Lembrete: Marcação na Barbearia João Angeiras em 1 hora!',
-      'END:VALARM',
-      'END:VEVENT',
-      'END:VCALENDAR'
-    ].join('\r\n');
-    
-    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'marcacao-barbearia.ics';
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      console.log('📅 A gerar ficheiro ICS...', bookingData);
+
+      const [year, month, day] = bookingData.date.split('-').map(Number);
+      const [hour, min] = bookingData.time.split(':').map(Number);
+
+      const pad = n => String(n).padStart(2, '0');
+      const dtStart = `${year}${pad(month)}${pad(day)}T${pad(hour)}${pad(min)}00`;
+
+      const duration = parseInt(bookingData.duration) || 30;
+      const endDate = new Date(year, month - 1, day, hour, min + duration);
+      const dtEnd = `${endDate.getFullYear()}${pad(endDate.getMonth()+1)}${pad(endDate.getDate())}T${pad(endDate.getHours())}${pad(endDate.getMinutes())}00`;
+
+      const ics = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Barbearia Joao Angeiras//PT',
+        'BEGIN:VEVENT',
+        `DTSTART:${dtStart}`,
+        `DTEND:${dtEnd}`,
+        `SUMMARY:Barbearia Joao Angeiras - ${bookingData.service}`,
+        `DESCRIPTION:Marcacao confirmada para ${bookingData.name}. Preco: ${bookingData.price}EUR`,
+        'LOCATION:R. de 31 de Janeiro 183, Povoa de Varzim',
+        `UID:${bookingData.bookingId || Date.now()}@barbearia-joaoangeiras`,
+        'BEGIN:VALARM',
+        'TRIGGER:-PT60M',
+        'ACTION:DISPLAY',
+        'DESCRIPTION:Lembrete: Marcacao na Barbearia em 1 hora!',
+        'END:VALARM',
+        'END:VEVENT',
+        'END:VCALENDAR'
+      ].join('\r\n');
+
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'marcacao-barbearia.ics';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      console.log('✅ Ficheiro ICS gerado com sucesso!');
+    } catch(err) {
+      console.error('❌ Erro ao gerar ICS:', err);
+      alert('Não foi possível gerar o ficheiro da agenda. Tenta novamente.');
+    }
   }
 
   /**

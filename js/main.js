@@ -845,7 +845,9 @@ async function confirmBooking() {
       notificationSystem.showBookingSuccess({
         ...bookingData,
         date: date,
-        time: time
+        time: time,
+        bookingId: result.bookingId,
+        duration: parseInt(serviceDuration) || 30
       });
       
       // Fechar modal
