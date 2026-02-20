@@ -51,8 +51,8 @@
       <button class="sidebar-btn" onclick="showTab('tabManual', this)">
         <i class="fas fa-plus-circle"></i> Nova Reserva
       </button>
-      <button class="sidebar-btn" onclick="showTab('tabBlocked', this)">
-        <i class="fas fa-ban"></i> Dias Bloqueados
+      <button class="sidebar-btn" onclick="showTab('tabSchedule', this)">
+        <i class="fas fa-sliders-h"></i> Gestão de Horários
       </button>
     </div>
 
@@ -197,16 +197,16 @@
             </div>
             <div class="form-group">
               <label>Telefone *</label>
-              <input type="tel" id="mPhone" class="form-control" placeholder="9XXXXXXXX">
+              <input type="tel" id="mPhone" class="form-control" placeholder="+351 9xx xxx xxx">
             </div>
           </div>
           <div class="form-group">
             <label>Serviço *</label>
             <select id="mService" class="form-control">
-              <option value="">Selecionar serviço...</option>
-              <option value="Corte de Cabelo|11|30">Corte de Cabelo — 11€</option>
-              <option value="Barba|5|20">Barba — 5€</option>
-              <option value="Corte + Barba|15|50">Corte + Barba — 15€</option>
+              <option value="">Escolher serviço...</option>
+              <option value="Corte de Cabelo|11|30">Corte de Cabelo — 11€ (30min)</option>
+              <option value="Barba|5|20">Barba — 5€ (20min)</option>
+              <option value="Corte + Barba|15|50">Corte + Barba — 15€ (50min)</option>
             </select>
           </div>
           <div class="settings-row">
@@ -242,51 +242,200 @@
       </div>
     </div>
 
-    <!-- ─── TAB: DIAS BLOQUEADOS ─── -->
-    <div id="tabBlocked" class="tab-view">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+    <!-- ─── TAB: GESTÃO DE HORÁRIOS ─── -->
+    <div id="tabSchedule" class="tab-view">
+      <div class="schedule-manager-grid">
 
-        <!-- Formulário bloquear -->
-        <div class="card">
-          <div class="card-header">
-            <h3><i class="fas fa-ban"></i> Bloquear Dia(s)</h3>
+        <!-- COLUNA ESQUERDA: Bloquear / Abrir exceção -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+          <!-- BLOQUEAR UM DIA -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fas fa-ban" style="color:var(--red)"></i> Bloquear Dia(s)</h3>
+            </div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+              <p style="color:var(--white-dim);font-size:0.85rem;">
+                Use isto para férias, feriados ou qualquer dia que não vá trabalhar.
+              </p>
+              <div class="form-group">
+                <label>Motivo *</label>
+                <input type="text" id="blockDesc" class="form-control" placeholder="Ex: Férias, Feriado, Formação...">
+              </div>
+              <div class="form-group">
+                <label>Tipo</label>
+                <select id="blockType" class="form-control" onchange="toggleBlockEndDate()">
+                  <option value="single">Dia único</option>
+                  <option value="range">Período</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Data *</label>
+                <input type="date" id="blockStart" class="form-control">
+              </div>
+              <div class="form-group" id="blockEndGroup" style="display:none;">
+                <label>Data Fim *</label>
+                <input type="date" id="blockEnd" class="form-control">
+              </div>
+              <button class="btn btn-danger" onclick="addBlockedDate()" style="align-self:flex-start;">
+                <i class="fas fa-ban"></i> Bloquear Este Dia
+              </button>
+            </div>
           </div>
-          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
-            <div class="form-group">
-              <label>Motivo *</label>
-              <input type="text" id="blockDesc" class="form-control" placeholder="Ex: Feriado, Férias, Formação...">
+
+          <!-- ABRIR EXCEPÇÃO (trabalhar num dia de folga) -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fas fa-calendar-plus" style="color:var(--green)"></i> Abrir Dia Extra</h3>
             </div>
-            <div class="form-group">
-              <label>Tipo</label>
-              <select id="blockType" class="form-control" onchange="toggleBlockEndDate()">
-                <option value="single">Dia único</option>
-                <option value="range">Período</option>
-              </select>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+              <p style="color:var(--white-dim);font-size:0.85rem;">
+                Por exemplo: trabalhar numa <strong>segunda-feira</strong> ou <strong>domingo</strong> quando normalmente está fechado.
+              </p>
+              <div class="form-group">
+                <label>Motivo (opcional)</label>
+                <input type="text" id="openDesc" class="form-control" placeholder="Ex: Trabalho extra, Feriado compensatório...">
+              </div>
+              <div class="form-group">
+                <label>Data a Abrir *</label>
+                <input type="date" id="openDate" class="form-control">
+              </div>
+              <div class="settings-row">
+                <div class="form-group">
+                  <label>Hora Abertura</label>
+                  <input type="time" id="openStart" class="form-control" value="09:00">
+                </div>
+                <div class="form-group">
+                  <label>Hora Fecho</label>
+                  <input type="time" id="openEnd" class="form-control" value="18:00">
+                </div>
+              </div>
+              <button class="btn btn-success" onclick="addOpenException()" style="align-self:flex-start;">
+                <i class="fas fa-calendar-plus"></i> Abrir Este Dia
+              </button>
             </div>
-            <div class="form-group">
-              <label>Data *</label>
-              <input type="date" id="blockStart" class="form-control">
-            </div>
-            <div class="form-group" id="blockEndGroup" style="display:none;">
-              <label>Data Fim *</label>
-              <input type="date" id="blockEnd" class="form-control">
-            </div>
-            <button class="btn btn-danger" onclick="addBlockedDate()" style="align-self:flex-start;">
-              <i class="fas fa-ban"></i> Bloquear
-            </button>
           </div>
+
+          <!-- OVERRIDE DE PAUSA POR DIA -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fas fa-coffee" style="color:var(--gold)"></i> Alterar Pausa num Dia</h3>
+            </div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+              <p style="color:var(--white-dim);font-size:0.85rem;">
+                Num dia específico, pode remover a pausa (ex: trabalhar o almoço) ou mudar o horário dela.
+              </p>
+              <div class="form-group">
+                <label>Data *</label>
+                <input type="date" id="breakOverrideDate" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>O que fazer neste dia?</label>
+                <select id="breakOverrideType" class="form-control" onchange="toggleBreakOverrideFields()">
+                  <option value="remove">Sem pausa (trabalha o almoço)</option>
+                  <option value="change">Mudar horário da pausa</option>
+                </select>
+              </div>
+              <div id="breakOverrideHours" style="display:none;">
+                <div class="settings-row">
+                  <div class="form-group">
+                    <label>Nova pausa — Início</label>
+                    <input type="time" id="breakOverrideStart" class="form-control" value="12:00">
+                  </div>
+                  <div class="form-group">
+                    <label>Nova pausa — Fim</label>
+                    <input type="time" id="breakOverrideEnd" class="form-control" value="13:00">
+                  </div>
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="addBreakOverride()" style="align-self:flex-start;">
+                <i class="fas fa-coffee"></i> Aplicar Neste Dia
+              </button>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Lista bloqueados -->
-        <div class="card">
-          <div class="card-header">
-            <h3><i class="fas fa-calendar-times"></i> Dias Bloqueados</h3>
-          </div>
-          <div class="card-body">
-            <div id="blockedList" style="display:flex;flex-direction:column;gap:8px;">
-              <p style="color:var(--white-dim);font-size:0.85rem;">Nenhum dia bloqueado.</p>
+        <!-- COLUNA DIREITA: Listas + Gestão de slots -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+          <!-- LISTA DIAS BLOQUEADOS + ABERTOS -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fas fa-calendar-alt"></i> Exceções ao Horário Normal</h3>
+            </div>
+            <div class="card-body">
+              <div style="font-size:0.78rem;color:var(--white-dim);margin-bottom:12px;">
+                <span style="color:var(--red);margin-right:12px;"><i class="fas fa-ban"></i> Fechado</span>
+                <span style="color:var(--green);"><i class="fas fa-calendar-plus"></i> Dia extra aberto</span>
+              </div>
+              <div id="blockedList" style="display:flex;flex-direction:column;gap:8px;">
+                <p style="color:var(--white-dim);font-size:0.85rem;">Nenhuma excepção definida.</p>
+              </div>
             </div>
           </div>
+
+          <!-- GESTÃO DE SLOTS POR DIA -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fas fa-clock"></i> Horários Disponíveis por Dia</h3>
+            </div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+              <p style="color:var(--white-dim);font-size:0.85rem;">
+                Escolha um dia e selecione quais os horários que os clientes podem marcar. 
+                Pode bloquear horas para almoço, compromissos pessoais, etc.
+              </p>
+              <div class="settings-row">
+                <div class="form-group">
+                  <label>Dia a Gerir</label>
+                  <input type="date" id="slotDate" class="form-control" onchange="loadDaySlots()">
+                </div>
+                <div style="display:flex;align-items:flex-end;gap:8px;">
+                  <button class="btn btn-outline btn-sm" onclick="selectAllSlots()">
+                    <i class="fas fa-check-double"></i> Todos
+                  </button>
+                  <button class="btn btn-ghost btn-sm" onclick="clearAllSlots()">
+                    <i class="fas fa-times"></i> Nenhum
+                  </button>
+                </div>
+              </div>
+
+              <div id="slotsGrid" class="slots-picker-grid">
+                <p style="color:var(--white-dim);font-size:0.85rem;">
+                  <i class="fas fa-info-circle"></i> Escolha uma data para ver os horários.
+                </p>
+              </div>
+
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="saveDaySlots()">
+                  <i class="fas fa-save"></i> Guardar Horários deste Dia
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="resetDaySlots()">
+                  <i class="fas fa-undo"></i> Repor Padrão
+                </button>
+              </div>
+              <div id="slotsSaveMsg" style="display:none;color:var(--green);font-size:0.85rem;">
+                <i class="fas fa-check"></i> Guardado com sucesso!
+              </div>
+
+              <!-- Legenda -->
+              <div class="slots-legend">
+                <div class="slots-legend-item">
+                  <div class="slot-sample available"></div>
+                  <span>Disponível para marcação</span>
+                </div>
+                <div class="slots-legend-item">
+                  <div class="slot-sample blocked"></div>
+                  <span>Bloqueado / não disponível</span>
+                </div>
+                <div class="slots-legend-item">
+                  <div class="slot-sample booked"></div>
+                  <span>Já tem marcação</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
       </div>
@@ -299,9 +448,12 @@
         <!-- Horários -->
         <div class="card">
           <div class="card-header">
-            <h3><i class="fas fa-clock"></i> Horário de Trabalho</h3>
+            <h3><i class="fas fa-clock"></i> Horário de Trabalho Padrão</h3>
           </div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:16px;">
+            <p style="color:var(--white-dim);font-size:0.83rem;">
+              Este é o horário base para dias normais. Para exceções pontuais use a secção <strong>Gestão de Horários</strong>.
+            </p>
             <div class="settings-row">
               <div class="form-group">
                 <label>Abertura</label>
@@ -312,18 +464,29 @@
                 <input type="time" id="cfgClose" class="form-control" value="19:00">
               </div>
             </div>
-            <div class="settings-row">
-              <div class="form-group">
-                <label>Pausa — Início</label>
-                <input type="time" id="cfgBreakStart" class="form-control" value="13:00">
+            <div class="form-group">
+              <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                <input type="checkbox" id="cfgEnableBreak" onchange="toggleBreakFields()" style="width:18px;height:18px;accent-color:var(--gold);">
+                <span>Ativar pausa de almoço (aplica-se a todos os dias)</span>
+              </label>
+            </div>
+            <div id="breakFieldsGroup" style="display:none;">
+              <div class="settings-row">
+                <div class="form-group">
+                  <label>Pausa — Início</label>
+                  <input type="time" id="cfgBreakStart" class="form-control" value="13:00">
+                </div>
+                <div class="form-group">
+                  <label>Pausa — Fim</label>
+                  <input type="time" id="cfgBreakEnd" class="form-control" value="14:00">
+                </div>
               </div>
-              <div class="form-group">
-                <label>Pausa — Fim</label>
-                <input type="time" id="cfgBreakEnd" class="form-control" value="14:00">
-              </div>
+              <p style="color:var(--white-dim);font-size:0.8rem;margin-top:-8px;">
+                <i class="fas fa-info-circle"></i> Para mudar a pausa num dia específico, usa <strong>Gestão de Horários → Override de Pausa</strong>.
+              </p>
             </div>
             <div class="form-group">
-              <label>Dias de Trabalho</label>
+              <label>Dias de Trabalho (padrão semanal)</label>
               <div class="working-days">
                 <label class="day-toggle"><input type="checkbox" name="workingDays" value="0"> Dom</label>
                 <label class="day-toggle"><input type="checkbox" name="workingDays" value="1"> Seg</label>

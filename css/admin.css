@@ -1216,3 +1216,184 @@ table.data-table {
   .cal-toolbar { flex-direction: column; align-items: flex-start; }
   .topbar-time { display: none; }
 }
+
+
+
+/* ═══════════════════════════════════════════════════════
+   ADMIN EXTRA CSS — Gestão de Horários / Slots / Exceções
+   Adicionar ao final do admin.css existente
+═══════════════════════════════════════════════════════ */
+
+/* ─── Layout gestão de horários ─── */
+.schedule-manager-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .schedule-manager-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Chip de excepção aberta ─── */
+.blocked-chip.chip-open {
+  border-color: rgba(72, 199, 142, 0.3);
+  background: rgba(72, 199, 142, 0.08);
+}
+.blocked-chip.chip-open i.fa-calendar-plus {
+  color: var(--green, #48c78e);
+}
+
+/* ─── Mês: dia extra aberto ─── */
+.month-day.open-exception-day {
+  border-color: rgba(72, 199, 142, 0.4);
+  background: rgba(72, 199, 142, 0.06);
+}
+.month-open-label {
+  font-size: 0.65rem;
+  color: var(--green, #48c78e);
+  margin-bottom: 2px;
+}
+
+/* ─── Semana: dia extra aberto ─── */
+.week-day-header.open-exception {
+  background: rgba(72, 199, 142, 0.12);
+  border-bottom-color: rgba(72, 199, 142, 0.4);
+}
+
+/* ─── Grid de slots ─── */
+.slots-picker-grid {
+  min-height: 60px;
+}
+
+.slots-picker-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.slot-pick {
+  position: relative;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.18s ease;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 70px;
+  justify-content: center;
+}
+
+/* Disponível = verde suave */
+.slot-pick.slot-available {
+  background: rgba(72, 199, 142, 0.12);
+  border-color: rgba(72, 199, 142, 0.35);
+  color: #48c78e;
+}
+.slot-pick.slot-available:hover {
+  background: rgba(72, 199, 142, 0.22);
+  border-color: rgba(72, 199, 142, 0.6);
+  transform: translateY(-1px);
+}
+
+/* Bloqueado manualmente = vermelho/cinzento */
+.slot-pick.slot-blocked-manual {
+  background: rgba(255, 82, 82, 0.08);
+  border-color: rgba(255, 82, 82, 0.25);
+  color: rgba(255, 255, 255, 0.35);
+  text-decoration: line-through;
+  cursor: pointer;
+}
+.slot-pick.slot-blocked-manual:hover {
+  background: rgba(255, 82, 82, 0.15);
+  border-color: rgba(255, 82, 82, 0.45);
+}
+
+/* Tem marcação = dourado, não clicável */
+.slot-pick.slot-booked {
+  background: rgba(212, 175, 55, 0.15);
+  border-color: rgba(212, 175, 55, 0.4);
+  color: #d4af37;
+  cursor: not-allowed;
+  font-weight: 600;
+}
+
+/* Badge de ícone no canto */
+.slot-badge {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+.slot-badge.blocked-badge {
+  color: rgba(255, 82, 82, 0.7);
+}
+
+/* ─── Legenda dos slots ─── */
+.slots-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.slots-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--white-dim, rgba(255,255,255,0.55));
+}
+.slot-sample {
+  width: 28px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+}
+.slot-sample.available {
+  background: rgba(72, 199, 142, 0.15);
+  border-color: rgba(72, 199, 142, 0.4);
+}
+.slot-sample.blocked {
+  background: rgba(255, 82, 82, 0.08);
+  border-color: rgba(255, 82, 82, 0.3);
+}
+.slot-sample.booked {
+  background: rgba(212, 175, 55, 0.15);
+  border-color: rgba(212, 175, 55, 0.4);
+}
+
+/* ─── Calendário do cliente: dia extra aberto ─── */
+.cal-day--extra {
+  outline: 1px solid rgba(72, 199, 142, 0.5);
+  background: rgba(72, 199, 142, 0.06);
+}
+.cal-day-extra-dot {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 0.55rem;
+  color: #48c78e;
+  line-height: 1;
+}
+
+/* ─── Chip de override de pausa ─── */
+.blocked-chip.chip-break {
+  border-color: rgba(212, 175, 55, 0.3);
+  background: rgba(212, 175, 55, 0.07);
+}
+.blocked-chip.chip-break i.fa-coffee {
+  color: var(--gold, #d4af37);
+}
+
+/* ─── Slot de pausa no calendário do cliente ─── */
+.time-slot.busy .slot-break-label {
+  font-size: 0.7rem;
+  margin-left: 4px;
+  opacity: 0.7;
+}

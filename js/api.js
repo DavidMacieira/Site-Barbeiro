@@ -1,12 +1,12 @@
 // api.js - SISTEMA COMPLETO PARA BARBEARIA REAL
 
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbx_45-2GhpTXefOdUKL4mQsHTwJ1g8FKR7Ir-dO6sVbK7qoZjlYgsDqcYaUmM6hX6PP/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwEqFsrIerMq3msK_VfGkJ0PLacDfyu1OQhQS9QgA-CrhWzeHDRNCMuLV1o52OIg0kH/exec';
 
 // Credenciais admin
 const ADMIN_CREDENTIALS = {
-  email: 'admin@barbearia.com',
-  password: 'admin123'
+  email: 'jangeirasbarbeiro@admin.com',
+  password: 'gostodecortarcabelo'
 };
 
 class BarbeariaAPI {
@@ -550,14 +550,7 @@ class NotificationSystem {
           time: bookingData.time,
           price: bookingData.price
         },
-        actions: [
-          {
-            text: 'Adicionar à Agenda',
-            icon: 'fas fa-calendar-plus',
-            class: 'btn-calendar',
-            onclick: `notificationSystem.downloadICS(${JSON.stringify(bookingData)})`
-          }
-        ]
+        actions: []
       }
     );
   }
@@ -596,20 +589,20 @@ class NotificationSystem {
         'END:VCALENDAR'
       ].join('\r\n');
 
-      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
+      // Usar data URI — funciona em PC e telemóvel sem restrições de browser
+      const encoded = encodeURIComponent(ics);
       const a = document.createElement('a');
-      a.href = url;
+      a.href = 'data:text/calendar;charset=utf-8,' + encoded;
       a.download = 'marcacao-barbearia.ics';
+      a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setTimeout(() => document.body.removeChild(a), 500);
 
       console.log('✅ Ficheiro ICS gerado com sucesso!');
     } catch(err) {
       console.error('❌ Erro ao gerar ICS:', err);
-      alert('Não foi possível gerar o ficheiro da agenda. Tenta novamente.');
+      alert('Nao foi possivel gerar o ficheiro da agenda. Tenta novamente.');
     }
   }
 

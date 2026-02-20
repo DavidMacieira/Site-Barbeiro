@@ -164,9 +164,10 @@ const Calendar = {
   currentYear: new Date().getFullYear(),
   currentMonth: new Date().getMonth(),
   selectedDate: null,
-  bookedDates: {}, // { 'YYYY-MM-DD': slotsOcupados }
-  blockedDates: [], // datas bloqueadas manualmente
-  CLOSED_DAYS: [0, 1], // domingo=0, segunda=1
+  bookedDates: {},
+  blockedDates: [],
+  openExceptions: [],
+  CLOSED_DAYS: [0, 1],
 
   // Inicializar e injetar calendário no modal
   async init() {
@@ -176,11 +177,16 @@ const Calendar = {
     // Esconder o input nativo
     bookingDate.style.display = 'none';
 
-    // Criar o widget
-    const wrapper = document.createElement('div');
-    wrapper.id = 'calendarWidget';
-    wrapper.className = 'cal-widget';
-    bookingDate.parentNode.insertBefore(wrapper, bookingDate.nextSibling);
+    // Criar o widget (só se não existir)
+    if (!document.getElementById('calendarWidget')) {
+      const wrapper = document.createElement('div');
+      wrapper.id = 'calendarWidget';
+      wrapper.className = 'cal-widget';
+      bookingDate.parentNode.insertBefore(wrapper, bookingDate.nextSibling);
+    }
+
+    // Carregar configurações do barbeiro (dias de trabalho) e bloqueios
+    await this.loadServerConfig();
 
     // Selecionar hoje por padrão — mas se já passou o horário de fecho, avança para amanhã
     const todayDate = new Date();
@@ -189,16 +195,56 @@ const Calendar = {
     this.currentYear = this.selectedDate.getFullYear();
     this.currentMonth = this.selectedDate.getMonth();
 
-    // Carregar datas bloqueadas do servidor
-    try {
-      const blocked = await barbeariaAPI.getBlockedDates();
-      if (Array.isArray(blocked)) {
-        this.blockedDates = blocked.map(b => b.startDate);
-      }
-    } catch(e) { /* silencioso */ }
-
     await this.loadMonthBookings();
     this.render();
+  },
+
+  // Carregar configurações do servidor (dias de trabalho + bloqueios/excepções)
+  async loadServerConfig() {
+    try {
+      // Carregar dias de trabalho das settings
+      const settings = await barbeariaAPI.getSettings();
+      if (settings && settings.workingHours && settings.workingHours.workingDays) {
+        const workingDays = settings.workingHours.workingDays; // ex: [2,3,4,5,6]
+        // Dias fechados = todos os dias da semana que NÃO estão em workingDays
+        this.CLOSED_DAYS = [0,1,2,3,4,5,6].filter(d => !workingDays.includes(d));
+      }
+    } catch(e) { /* manter padrão */ }
+
+    try {
+      // Carregar bloqueios e excepções do servidor
+      const blocked = await barbeariaAPI.getBlockedDates();
+      if (Array.isArray(blocked)) {
+        this.blockedDates = [];    // datas bloqueadas
+        this.openExceptions = [];  // dias extra abertos (override dos dias fechados)
+
+        blocked.forEach(b => {
+          if (b.type === 'open_exception') {
+            // Dia extra — guardar com horário se disponível
+            this.openExceptions.push({
+              date:      b.startDate,
+              openStart: b.openStart || '09:00',
+              openEnd:   b.openEnd   || '19:00'
+            });
+          } else {
+            // Bloqueio — pode ser dia único ou período
+            if (b.startDate) {
+              if (b.endDate && b.endDate !== b.startDate) {
+                // Expandir período em datas individuais
+                const cur = new Date(b.startDate + 'T12:00:00');
+                const end = new Date(b.endDate   + 'T12:00:00');
+                while (cur <= end) {
+                  this.blockedDates.push(this.toISO(cur));
+                  cur.setDate(cur.getDate() + 1);
+                }
+              } else {
+                this.blockedDates.push(b.startDate);
+              }
+            }
+          }
+        });
+      }
+    } catch(e) { /* silencioso */ }
   },
 
   // Converter Date para YYYY-MM-DD
@@ -210,35 +256,40 @@ const Calendar = {
   },
 
   // Próximo dia útil a partir de uma data
+  // Próximo dia de trabalho, respeitando excepções abertas
   nextWorkingDay(date) {
     const d = new Date(date);
-    while (this.CLOSED_DAYS.includes(d.getDay())) {
+    while (this.isClosed(d) && !this.isOpenException(d)) {
       d.setDate(d.getDate() + 1);
     }
     return d;
   },
 
-  // Se hoje já passou o horário de fecho (19h), avança para o próximo dia útil
+  // Se hoje já passou o horário de fecho, avança para o próximo dia disponível
   nextAvailableDay(date) {
     const d = new Date(date);
     const WORKING_END_HOUR = 19;
     const isAfterHours = d.getHours() >= WORKING_END_HOUR;
-
-    // Se hoje é dia de trabalho mas já fechou, avançar para amanhã
-    if (!this.CLOSED_DAYS.includes(d.getDay()) && isAfterHours) {
+    if (!this.isClosed(d) && isAfterHours) {
       d.setDate(d.getDate() + 1);
     }
-
-    // Saltar fins-de-semana/fechados
     return this.nextWorkingDay(d);
   },
 
-  // Verificar se uma data é dia fechado
+  // Dia fechado = dia de folga normal SEM excepção aberta
   isClosed(date) {
+    const iso = this.toISO(date);
+    if (this.openExceptions.some(e => e.date === iso)) return false;
     return this.CLOSED_DAYS.includes(date.getDay());
   },
 
-  // Verificar se uma data está bloqueada manualmente
+  // Dia com excepção aberta (ex: segunda-feira pontual)
+  isOpenException(date) {
+    const iso = typeof date === 'string' ? date : this.toISO(date);
+    return this.openExceptions.some(e => e.date === iso);
+  },
+
+  // Dia bloqueado pelo barbeiro
   isBlocked(isoDate) {
     return this.blockedDates.includes(isoDate);
   },
@@ -335,9 +386,10 @@ const Calendar = {
     for (let d = 1; d <= lastDay.getDate(); d++) {
       const date = new Date(this.currentYear, this.currentMonth, d);
       const iso = this.toISO(date);
-      const past = this.isPast(date);
-      const closed = this.isClosed(date);
-      const blocked = this.isBlocked(iso);
+      const past    = this.isPast(date);
+      const closed  = this.isClosed(date);   // dia de folga sem excepção
+      const blocked = this.isBlocked(iso);   // bloqueado pelo barbeiro
+      const isExtra = this.isOpenException(iso); // dia extra aberto
       const isSelected = this.selectedDate && this.toISO(this.selectedDate) === iso;
       const isToday = this.toISO(today) === iso;
       const hasBookings = this.bookedDates[iso] && this.bookedDates[iso] > 0;
@@ -350,29 +402,36 @@ const Calendar = {
         cls += ' cal-day--past';
         clickable = false;
         title = 'Data passada';
-      } else if (closed) {
-        cls += ' cal-day--closed';
-        clickable = false;
-        title = 'Encerrado (Dom/Seg)';
       } else if (blocked) {
+        // Bloqueado pelo barbeiro — sempre fecha, mesmo que seja dia normal
         cls += ' cal-day--blocked';
         clickable = false;
         title = 'Data indisponível';
+      } else if (closed) {
+        // Dia de folga normal (sem excepção)
+        cls += ' cal-day--closed';
+        clickable = false;
+        title = 'Encerrado';
       } else {
         cls += ' cal-day--open';
+        if (isExtra) {
+          cls += ' cal-day--extra';
+          title = 'Dia extra disponível';
+        }
       }
 
       if (isSelected) cls += ' selected';
       if (isToday) cls += ' cal-day--today';
-      if (hasBookings && !past && !closed && !blocked) cls += ' cal-day--has-bookings';
+      if (hasBookings && clickable) cls += ' cal-day--has-bookings';
 
       const onclick = clickable
         ? `onclick="Calendar.selectDay('${iso}', this)"`
         : '';
 
       let inner = `<span class="cal-day-num">${d}</span>`;
-      if (closed || blocked) inner += `<span class="cal-day-x" aria-hidden="true"></span>`;
-      if (hasBookings && !past && !closed && !blocked) inner += `<span class="cal-day-dot" aria-hidden="true"></span>`;
+      if (!clickable) inner += `<span class="cal-day-x" aria-hidden="true"></span>`;
+      if (isExtra && clickable) inner += `<span class="cal-day-extra-dot" aria-hidden="true" title="Dia extra">★</span>`;
+      if (hasBookings && clickable) inner += `<span class="cal-day-dot" aria-hidden="true"></span>`;
 
       html += `<div class="${cls}" ${onclick} title="${title}" role="${clickable ? 'button' : ''}" tabindex="${clickable ? '0' : '-1'}" onkeydown="if(event.key==='Enter'&&${clickable})Calendar.selectDay('${iso}',this)">${inner}</div>`;
     }
@@ -975,6 +1034,25 @@ async function loadAvailableTimeSlots() {
       return slot;
     });
 
+    // Slots bloqueados manualmente pelo barbeiro (guardados em localStorage)
+    // Nota: esta chave é lida pelo frontend do admin e escrita pelo admin.js
+    const adminBlocked = (() => {
+      try {
+        const raw = localStorage.getItem(`slots_${date}`);
+        return raw ? (JSON.parse(raw).blocked || []) : [];
+      } catch { return []; }
+    })();
+
+    // Marcar slots bloqueados pelo admin como indisponíveis
+    if (adminBlocked.length > 0) {
+      slots = slots.map(slot => {
+        if (adminBlocked.includes(slot.time)) {
+          return { ...slot, available: false };
+        }
+        return slot;
+      });
+    }
+
     // Filtrar horas passadas
     const validSlots = slots.filter(slot => {
       if (!isToday) return true;
@@ -1017,7 +1095,13 @@ async function loadAvailableTimeSlots() {
       if (slot.available === false) {
         button.className += ' time-slot busy';
         button.disabled = true;
-        button.title = "Horário já reservado";
+        // Distinguir pausa de almoço de slot já reservado
+        if (slot.inBreak) {
+          button.title = 'Pausa de almoço';
+          button.innerHTML = slot.time + '<span class="slot-break-label">🍽</span>';
+        } else {
+          button.title = 'Horário já reservado';
+        }
       } else {
         button.className += ' time-slot';
 

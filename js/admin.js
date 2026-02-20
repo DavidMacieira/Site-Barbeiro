@@ -1,5 +1,6 @@
 // ============================================================
 //  ADMIN.JS — Painel do Barbeiro João Angeiras
+//  MELHORADO: Gestão de slots, dias extra, bloqueios
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -25,8 +26,6 @@ async function initPanel() {
   ]);
 
   renderCalendar();
-
-  // Auto-refresh stats a cada 30s
   setInterval(loadStats, 30000);
 }
 
@@ -52,7 +51,7 @@ function showTab(tabId, btn) {
 
   if (tabId === 'tabCalendar') renderCalendar();
   if (tabId === 'tabBookings') loadAllBookings();
-  if (tabId === 'tabBlocked')  loadBlockedDates();
+  if (tabId === 'tabSchedule') { loadBlockedDates(); loadDaySlots(); }
 }
 
 // ── STATS ────────────────────────────────────────────────────
@@ -64,7 +63,6 @@ async function loadStats() {
     setText('statPending', s.pending ?? 0);
     setText('statRevenue', ((s.revenue ?? 0).toFixed(2)) + '€');
 
-    // Badge sidebar
     const badge = document.getElementById('sidebarPendingBadge');
     if (badge) {
       badge.textContent = s.pending ?? 0;
@@ -76,9 +74,9 @@ async function loadStats() {
 }
 
 // ── CALENDÁRIO ───────────────────────────────────────────────
-let calView  = 'week';   // 'week' | 'month'
+let calView  = 'week';
 let calDate  = new Date();
-let allBookingsCache = [];
+let allBookingsCache  = [];
 let blockedDatesCache = [];
 
 function switchCalView(v) {
@@ -103,7 +101,6 @@ function moveCalendar(dir) {
 
 async function renderCalendar() {
   try {
-    // Garantir dados actualizados
     const [bookings, blocked] = await Promise.all([
       barbeariaAPI.getBookings({}),
       barbeariaAPI.getBlockedDates()
@@ -133,20 +130,17 @@ function renderWeekView(container) {
     return d;
   });
 
-  // Update title
   const startFmt = days[0].toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' });
   const endFmt   = days[6].toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' });
   document.getElementById('calTitle').textContent = `${startFmt} – ${endFmt}`;
 
-  const hours = [];
+  const hours    = [];
   for (let h = 9; h <= 19; h++) hours.push(h);
 
   const today    = toDateStr(new Date());
   const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
   let html = `<div class="week-grid">`;
-
-  // Time column header (empty)
   html += `<div class="week-time-col">`;
   html += `<div style="height:56px;background:var(--black-4);border-bottom:1px solid rgba(255,255,255,0.05);"></div>`;
   hours.forEach(h => {
@@ -154,16 +148,19 @@ function renderWeekView(container) {
   });
   html += `</div>`;
 
-  // Day columns
   days.forEach(day => {
-    const ds       = toDateStr(day);
-    const isToday  = ds === today;
-    const isBlocked = isDayBlocked(ds);
+    const ds        = toDateStr(day);
+    const isToday   = ds === today;
+    const blockInfo = getDayStatus(ds);
+    const isBlocked = blockInfo.status === 'blocked';
+    const isOpen    = blockInfo.status === 'open_exception';
 
     html += `<div class="week-day-col">`;
-    html += `<div class="week-day-header${isToday ? ' today' : ''}${isBlocked ? ' blocked' : ''}">`;
+    html += `<div class="week-day-header${isToday ? ' today' : ''}${isBlocked ? ' blocked' : ''}${isOpen ? ' open-exception' : ''}">`;
     html += `<div class="week-day-name">${dayNames[day.getDay()]}</div>`;
     html += `<div class="week-day-date">${day.getDate()}</div>`;
+    if (isOpen) html += `<div style="font-size:0.6rem;color:var(--green)"><i class="fas fa-star"></i> Extra</div>`;
+    if (isBlocked) html += `<div style="font-size:0.6rem;color:var(--red)"><i class="fas fa-ban"></i> Fechado</div>`;
     html += `</div>`;
 
     hours.forEach(h => {
@@ -176,7 +173,7 @@ function renderWeekView(container) {
           b.status !== 'cancelled'
         );
         slotBookings.forEach(b => {
-          const top = (parseInt((b.time.split(':')[1] || '0')) / 60) * 60;
+          const top    = (parseInt((b.time.split(':')[1] || '0')) / 60) * 60;
           const height = Math.max(((b.duration || 30) / 60) * 60, 28);
           html += `<div class="booking-block status-${b.status}"
             style="top:${top}px; height:${height - 4}px;"
@@ -207,32 +204,25 @@ function renderMonthView(container) {
 
   const firstDay  = new Date(year, month, 1);
   const lastDay   = new Date(year, month + 1, 0);
-  const startWeek = (firstDay.getDay() + 6) % 7; // Monday-start
+  const startWeek = (firstDay.getDay() + 6) % 7;
   const today     = toDateStr(new Date());
-
   const dayLabels = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
 
   let html = `<div class="month-grid">`;
   html += `<div class="month-weekdays">` + dayLabels.map(l => `<div class="month-weekday-label">${l}</div>`).join('') + `</div>`;
   html += `<div class="month-days">`;
 
-  // Padding before
   for (let i = 0; i < startWeek; i++) {
     const d = new Date(year, month, 1 - startWeek + i);
     html += renderMonthDay(d, true, today);
   }
-
   for (let d = 1; d <= lastDay.getDate(); d++) {
-    const date = new Date(year, month, d);
-    html += renderMonthDay(date, false, today);
+    html += renderMonthDay(new Date(year, month, d), false, today);
   }
-
-  // Padding after
   const totalCells = startWeek + lastDay.getDate();
   const remainder  = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
   for (let i = 1; i <= remainder; i++) {
-    const d = new Date(year, month + 1, i);
-    html += renderMonthDay(d, true, today);
+    html += renderMonthDay(new Date(year, month + 1, i), true, today);
   }
 
   html += `</div></div>`;
@@ -242,7 +232,9 @@ function renderMonthView(container) {
 function renderMonthDay(date, otherMonth, today) {
   const ds        = toDateStr(date);
   const isToday   = ds === today;
-  const isBlocked = isDayBlocked(ds);
+  const blockInfo = getDayStatus(ds);
+  const isBlocked = !otherMonth && blockInfo.status === 'blocked';
+  const isOpen    = !otherMonth && blockInfo.status === 'open_exception';
   const bookings  = otherMonth ? [] : allBookingsCache.filter(b =>
     b.date === ds && b.status !== 'cancelled'
   );
@@ -251,6 +243,7 @@ function renderMonthDay(date, otherMonth, today) {
   if (otherMonth) cls += ' other-month';
   if (isToday)    cls += ' today';
   if (isBlocked)  cls += ' blocked';
+  if (isOpen)     cls += ' open-exception-day';
 
   const clickAttr = !otherMonth && !isBlocked
     ? `onclick="onMonthDayClick('${ds}')"` : '';
@@ -259,8 +252,16 @@ function renderMonthDay(date, otherMonth, today) {
   html += `<div class="month-day-num">${date.getDate()}</div>`;
 
   if (isBlocked) {
-    const label = getBlockedLabel(ds);
-    html += `<div class="month-blocked-label"><i class="fas fa-ban"></i>${escHtml(label)}</div>`;
+    html += `<div class="month-blocked-label"><i class="fas fa-ban"></i> ${escHtml(blockInfo.description || 'Fechado')}</div>`;
+  } else if (isOpen) {
+    html += `<div class="month-open-label"><i class="fas fa-star"></i> Dia Extra</div>`;
+    html += `<div class="month-mini-bookings">`;
+    bookings.slice(0, 3).forEach(b => {
+      html += `<div class="month-mini-booking status-${b.status}" onclick="openBookingDetail('${b.id}');event.stopPropagation();">
+        ${escHtml(b.time || '')} ${escHtml(b.name || '')}
+      </div>`;
+    });
+    html += `</div>`;
   } else {
     html += `<div class="month-mini-bookings">`;
     bookings.slice(0, 3).forEach(b => {
@@ -279,8 +280,7 @@ function renderMonthDay(date, otherMonth, today) {
 }
 
 function onMonthDayClick(ds) {
-  // Ao clicar num dia no mês, abrir semana view nesse dia
-  calDate = new Date(ds);
+  calDate = new Date(ds + 'T12:00:00');
   switchCalView('week');
 }
 
@@ -290,76 +290,39 @@ function openBookingDetail(bookingId) {
   if (!b) return;
 
   const statusLabels = { pending: 'Pendente', confirmed: 'Confirmado', completed: 'Concluído', cancelled: 'Cancelado' };
-  const statusLabel  = statusLabels[b.status] || b.status;
 
-  const body = document.getElementById('modalBookingDetailBody');
-  const footer = document.getElementById('modalBookingDetailFooter');
-
-  body.innerHTML = `
+  document.getElementById('modalBookingDetailBody').innerHTML = `
     <div class="booking-detail-grid">
-      <div class="booking-detail-item">
-        <label>Cliente</label>
-        <div class="val">${escHtml(b.name || '—')}</div>
-      </div>
-      <div class="booking-detail-item">
-        <label>Telefone</label>
-        <div class="val">${escHtml(b.phone || '—')}</div>
-      </div>
-      <div class="booking-detail-item">
-        <label>Serviço</label>
-        <div class="val">${escHtml(b.service || '—')}</div>
-      </div>
-      <div class="booking-detail-item">
-        <label>Preço</label>
-        <div class="val gold">${b.price || 0}€</div>
-      </div>
-      <div class="booking-detail-item">
-        <label>Data</label>
-        <div class="val">${formatDate(b.date)}</div>
-      </div>
-      <div class="booking-detail-item">
-        <label>Hora</label>
-        <div class="val">${b.time || '—'}</div>
-      </div>
+      <div class="booking-detail-item"><label>Cliente</label><div class="val">${escHtml(b.name || '—')}</div></div>
+      <div class="booking-detail-item"><label>Telefone</label><div class="val">${escHtml(b.phone || '—')}</div></div>
+      <div class="booking-detail-item"><label>Serviço</label><div class="val">${escHtml(b.service || '—')}</div></div>
+      <div class="booking-detail-item"><label>Preço</label><div class="val gold">${b.price || 0}€</div></div>
+      <div class="booking-detail-item"><label>Data</label><div class="val">${formatDate(b.date)}</div></div>
+      <div class="booking-detail-item"><label>Hora</label><div class="val">${b.time || '—'}</div></div>
       <div class="booking-detail-item" style="grid-column:1/-1;">
         <label>Estado</label>
-        <div><span class="badge badge-${b.status}">${statusLabel}</span></div>
+        <div><span class="badge badge-${b.status}">${statusLabels[b.status] || b.status}</span></div>
       </div>
-      ${b.notes ? `<div class="booking-detail-item" style="grid-column:1/-1;">
-        <label>Notas</label>
-        <div class="val">${escHtml(b.notes)}</div>
-      </div>` : ''}
+      ${b.notes ? `<div class="booking-detail-item" style="grid-column:1/-1;"><label>Notas</label><div class="val">${escHtml(b.notes)}</div></div>` : ''}
     </div>
   `;
 
-  // Action buttons
   let footerHtml = `<button class="btn btn-ghost" onclick="closeModal('modalBookingDetail')">Fechar</button>`;
-
   if (b.phone) {
     footerHtml += `<button class="btn btn-outline" onclick="contactWhatsApp('${b.phone}','${escHtml(b.name || '')}')">
-      <i class="fab fa-whatsapp"></i> WhatsApp
-    </button>`;
+      <i class="fab fa-whatsapp"></i> WhatsApp</button>`;
   }
-
   if (b.status === 'pending') {
-    footerHtml += `<button class="btn btn-primary" onclick="confirmBooking('${b.id}')">
-      <i class="fas fa-check"></i> Confirmar
-    </button>`;
+    footerHtml += `<button class="btn btn-primary" onclick="confirmBooking('${b.id}')"><i class="fas fa-check"></i> Confirmar</button>`;
   }
-
   if (b.status === 'confirmed') {
-    footerHtml += `<button class="btn btn-success" onclick="completeBooking('${b.id}')">
-      <i class="fas fa-check-double"></i> Concluído
-    </button>`;
+    footerHtml += `<button class="btn btn-success" onclick="completeBooking('${b.id}')"><i class="fas fa-check-double"></i> Concluído</button>`;
   }
-
   if (b.status !== 'cancelled' && b.status !== 'completed') {
-    footerHtml += `<button class="btn btn-danger" onclick="cancelBooking('${b.id}')">
-      <i class="fas fa-times"></i> Cancelar
-    </button>`;
+    footerHtml += `<button class="btn btn-danger" onclick="cancelBooking('${b.id}')"><i class="fas fa-times"></i> Cancelar</button>`;
   }
 
-  footer.innerHTML = footerHtml;
+  document.getElementById('modalBookingDetailFooter').innerHTML = footerHtml;
   openModal('modalBookingDetail');
 }
 
@@ -381,42 +344,30 @@ async function loadAllBookings() {
 
   if (!bookings || bookings.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="empty-state">
-      <i class="fas fa-calendar-times"></i>
-      <p>Nenhuma reserva encontrada</p>
-    </td></tr>`;
+      <i class="fas fa-calendar-times"></i><p>Nenhuma reserva encontrada</p></td></tr>`;
     return;
   }
 
-  tbody.innerHTML = bookings.map(b => {
-    const statusLabels = { pending: 'Pendente', confirmed: 'Confirmado', completed: 'Concluído', cancelled: 'Cancelado' };
-    return `<tr>
-      <td class="muted">${formatDate(b.date)}</td>
-      <td>${b.time || '—'}</td>
-      <td>${escHtml(b.name || '—')}</td>
-      <td class="muted">${escHtml(b.phone || '—')}</td>
-      <td>${escHtml(b.service || '—')}</td>
-      <td style="color:var(--gold)">${b.price || 0}€</td>
-      <td><span class="badge badge-${b.status}">${statusLabels[b.status] || b.status}</span></td>
-      <td>
-        <div class="action-row">
-          ${b.status === 'pending' ? `
-            <button class="btn btn-success btn-sm btn-icon" title="Confirmar" onclick="confirmBooking('${b.id}')"><i class="fas fa-check"></i></button>
-          ` : ''}
-          ${b.status === 'confirmed' ? `
-            <button class="btn btn-blue btn-sm btn-icon" title="Concluir" onclick="completeBooking('${b.id}')"><i class="fas fa-check-double"></i></button>
-          ` : ''}
-          ${b.status !== 'cancelled' && b.status !== 'completed' ? `
-            <button class="btn btn-danger btn-sm btn-icon" title="Cancelar" onclick="cancelBooking('${b.id}')"><i class="fas fa-times"></i></button>
-          ` : ''}
-          <button class="btn btn-ghost btn-sm btn-icon" title="Ver detalhes" onclick="openBookingDetail('${b.id}')"><i class="fas fa-eye"></i></button>
-          ${b.phone ? `
-            <button class="btn btn-ghost btn-sm btn-icon" title="WhatsApp" onclick="contactWhatsApp('${b.phone}','${escHtml(b.name || '')}')"><i class="fab fa-whatsapp"></i></button>
-          ` : ''}
-          <button class="btn btn-danger btn-sm btn-icon" title="Apagar" onclick="deleteBooking('${b.id}')"><i class="fas fa-trash"></i></button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
+  const statusLabels = { pending: 'Pendente', confirmed: 'Confirmado', completed: 'Concluído', cancelled: 'Cancelado' };
+  tbody.innerHTML = bookings.map(b => `<tr>
+    <td class="muted">${formatDate(b.date)}</td>
+    <td>${b.time || '—'}</td>
+    <td>${escHtml(b.name || '—')}</td>
+    <td class="muted">${escHtml(b.phone || '—')}</td>
+    <td>${escHtml(b.service || '—')}</td>
+    <td style="color:var(--gold)">${b.price || 0}€</td>
+    <td><span class="badge badge-${b.status}">${statusLabels[b.status] || b.status}</span></td>
+    <td>
+      <div class="action-row">
+        ${b.status === 'pending' ? `<button class="btn btn-success btn-sm btn-icon" title="Confirmar" onclick="confirmBooking('${b.id}')"><i class="fas fa-check"></i></button>` : ''}
+        ${b.status === 'confirmed' ? `<button class="btn btn-blue btn-sm btn-icon" title="Concluir" onclick="completeBooking('${b.id}')"><i class="fas fa-check-double"></i></button>` : ''}
+        ${b.status !== 'cancelled' && b.status !== 'completed' ? `<button class="btn btn-danger btn-sm btn-icon" title="Cancelar" onclick="cancelBooking('${b.id}')"><i class="fas fa-times"></i></button>` : ''}
+        <button class="btn btn-ghost btn-sm btn-icon" title="Ver detalhes" onclick="openBookingDetail('${b.id}')"><i class="fas fa-eye"></i></button>
+        ${b.phone ? `<button class="btn btn-ghost btn-sm btn-icon" title="WhatsApp" onclick="contactWhatsApp('${b.phone}','${escHtml(b.name || '')}')"><i class="fab fa-whatsapp"></i></button>` : ''}
+        <button class="btn btn-danger btn-sm btn-icon" title="Apagar" onclick="deleteBooking('${b.id}')"><i class="fas fa-trash"></i></button>
+      </div>
+    </td>
+  </tr>`).join('');
 }
 
 function clearFilters() {
@@ -437,9 +388,7 @@ async function confirmBooking(id) {
     toast('Marcação confirmada!', 'success');
     closeModal('modalBookingDetail');
     await Promise.all([loadStats(), loadAllBookings(), renderCalendar()]);
-  } else {
-    toast('Erro ao confirmar', 'error');
-  }
+  } else { toast('Erro ao confirmar', 'error'); }
 }
 
 async function completeBooking(id) {
@@ -448,9 +397,7 @@ async function completeBooking(id) {
     toast('Marcação concluída! ✓', 'success');
     closeModal('modalBookingDetail');
     await Promise.all([loadStats(), loadAllBookings(), renderCalendar()]);
-  } else {
-    toast('Erro ao concluir', 'error');
-  }
+  } else { toast('Erro ao concluir', 'error'); }
 }
 
 async function cancelBooking(id) {
@@ -460,9 +407,7 @@ async function cancelBooking(id) {
     toast('Marcação cancelada', 'warning');
     closeModal('modalBookingDetail');
     await Promise.all([loadStats(), loadAllBookings(), renderCalendar()]);
-  } else {
-    toast('Erro ao cancelar', 'error');
-  }
+  } else { toast('Erro ao cancelar', 'error'); }
 }
 
 async function deleteBooking(id) {
@@ -471,9 +416,7 @@ async function deleteBooking(id) {
   if (ok?.success) {
     toast('Marcação apagada', 'info');
     await Promise.all([loadStats(), loadAllBookings(), renderCalendar()]);
-  } else {
-    toast('Erro ao apagar', 'error');
-  }
+  } else { toast('Erro ao apagar', 'error'); }
 }
 
 function contactWhatsApp(phone, name) {
@@ -487,6 +430,8 @@ function setDefaultDates() {
   const today = toDateStr(new Date());
   const mDate = document.getElementById('mDate');
   if (mDate) mDate.value = today;
+  const slotDate = document.getElementById('slotDate');
+  if (slotDate) slotDate.value = today;
 }
 
 async function saveManualBooking() {
@@ -504,7 +449,6 @@ async function saveManualBooking() {
   }
 
   const [svcName, svcPrice, svcDuration] = service.split('|');
-
   const data = {
     name, phone,
     service:  svcName,
@@ -515,7 +459,6 @@ async function saveManualBooking() {
   };
 
   const result = await barbeariaAPI.saveBooking(data).catch(() => null);
-
   if (result?.success) {
     toast('Reserva criada com sucesso!', 'success');
     clearManualForm();
@@ -535,37 +478,28 @@ function clearManualForm() {
   setDefaultDates();
 }
 
-// ── DIAS BLOQUEADOS ──────────────────────────────────────────
-async function loadBlockedDates() {
-  const dates = await barbeariaAPI.getBlockedDates().catch(() => []);
-  blockedDatesCache = dates || [];
-  renderBlockedList(dates);
-}
+// ════════════════════════════════════════════════════════════════
+//  GESTÃO DE HORÁRIOS — NOVIDADES
+// ════════════════════════════════════════════════════════════════
 
-function renderBlockedList(dates) {
-  const el = document.getElementById('blockedList');
-  if (!el) return;
-
-  if (!dates || dates.length === 0) {
-    el.innerHTML = `<p style="color:var(--white-dim);font-size:0.85rem;">Nenhum dia bloqueado.</p>`;
-    return;
-  }
-
-  el.innerHTML = dates.map(d => {
-    let period = formatDate(d.startDate);
-    if (d.endDate && d.endDate !== d.startDate) {
-      period += ` → ${formatDate(d.endDate)}`;
+// ── HELPER: status de um dia ─────────────────────────────────
+// Devolve { status: 'normal'|'blocked'|'open_exception', description, ... }
+function getDayStatus(dateStr) {
+  for (const b of blockedDatesCache) {
+    if (b.type === 'open_exception') {
+      if (b.startDate === dateStr) return { status: 'open_exception', ...b };
+    } else {
+      // bloqueio
+      if (b.startDate === dateStr) return { status: 'blocked', ...b };
+      if (b.endDate && b.startDate <= dateStr && dateStr <= b.endDate) {
+        return { status: 'blocked', ...b };
+      }
     }
-    return `<div class="blocked-chip">
-      <i class="fas fa-ban"></i>
-      <span><strong>${escHtml(d.description || 'Bloqueado')}</strong> — ${period}</span>
-      <button onclick="removeBlockedDate('${d.id}')" title="Remover bloqueio">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>`;
-  }).join('');
+  }
+  return { status: 'normal' };
 }
 
+// ── BLOQUEAR DIA ─────────────────────────────────────────────
 function toggleBlockEndDate() {
   const type = document.getElementById('blockType').value;
   document.getElementById('blockEndGroup').style.display = type === 'range' ? 'block' : 'none';
@@ -577,8 +511,12 @@ async function addBlockedDate() {
   const start = document.getElementById('blockStart').value;
   const end   = document.getElementById('blockEnd').value;
 
-  if (!desc || !start) {
-    toast('Preencha a descrição e a data', 'error');
+  if (!start) {
+    toast('Escolha uma data', 'error');
+    return;
+  }
+  if (!desc) {
+    toast('Escreva um motivo (ex: Férias)', 'error');
     return;
   }
   if (type === 'range' && (!end || end < start)) {
@@ -586,13 +524,13 @@ async function addBlockedDate() {
     return;
   }
 
-  const payload = { description: desc, startDate: start, type };
+  const payload = { description: desc, startDate: start, type: 'blocked' };
   if (type === 'range') payload.endDate = end;
 
   const result = await barbeariaAPI.addBlockedDate(payload).catch(() => null);
 
   if (result?.success) {
-    toast('Dia bloqueado!', 'success');
+    toast(`Dia ${formatDate(start)} bloqueado!`, 'success');
     document.getElementById('blockDesc').value  = '';
     document.getElementById('blockStart').value = '';
     document.getElementById('blockEnd').value   = '';
@@ -603,39 +541,311 @@ async function addBlockedDate() {
   }
 }
 
-async function removeBlockedDate(id) {
-  if (!confirm('Remover este bloqueio?')) return;
-  const result = await barbeariaAPI.removeBlockedDate(id).catch(() => null);
+// ── ABRIR DIA EXTRA (excepção) ───────────────────────────────
+async function addOpenException() {
+  const desc  = document.getElementById('openDesc').value.trim();
+  const date  = document.getElementById('openDate').value;
+  const start = document.getElementById('openStart').value;
+  const end   = document.getElementById('openEnd').value;
+
+  if (!date) {
+    toast('Escolha uma data para abrir', 'error');
+    return;
+  }
+  if (!start || !end || end <= start) {
+    toast('Defina horário de abertura e fecho válidos', 'error');
+    return;
+  }
+
+  const payload = {
+    description: desc || 'Dia extra de trabalho',
+    startDate:   date,
+    type:        'open_exception',
+    openStart:   start,
+    openEnd:     end
+  };
+
+  const result = await barbeariaAPI.addBlockedDate(payload).catch(() => null);
+
   if (result?.success) {
-    toast('Bloqueio removido!', 'success');
+    toast(`Dia ${formatDate(date)} aberto para marcações (${start}–${end})!`, 'success');
+    document.getElementById('openDesc').value  = '';
+    document.getElementById('openDate').value  = '';
+    document.getElementById('openStart').value = '09:00';
+    document.getElementById('openEnd').value   = '18:00';
     await loadBlockedDates();
     renderCalendar();
   } else {
-    toast('Erro ao remover bloqueio', 'error');
+    toast(result?.error || 'Erro ao abrir dia extra', 'error');
   }
 }
 
-function isDayBlocked(dateStr) {
-  return blockedDatesCache.some(b => {
-    if (b.startDate === dateStr) return true;
-    if (b.endDate && b.startDate <= dateStr && dateStr <= b.endDate) return true;
-    return false;
+// ── REMOVER EXCEPÇÃO / BLOQUEIO ──────────────────────────────
+async function removeBlockedDate(id) {
+  if (!confirm('Remover esta excepção?')) return;
+  const result = await barbeariaAPI.removeBlockedDate(id).catch(() => null);
+  if (result?.success) {
+    toast('Removido!', 'success');
+    await loadBlockedDates();
+    renderCalendar();
+  } else {
+    toast('Erro ao remover', 'error');
+  }
+}
+
+// ── CARREGAR + RENDERIZAR LISTA ──────────────────────────────
+async function loadBlockedDates() {
+  const dates = await barbeariaAPI.getBlockedDates().catch(() => []);
+  blockedDatesCache = dates || [];
+  renderBlockedList(dates);
+}
+
+function renderBlockedList(dates) {
+  const el = document.getElementById('blockedList');
+  if (!el) return;
+
+  if (!dates || dates.length === 0) {
+    el.innerHTML = `<p style="color:var(--white-dim);font-size:0.85rem;">Nenhuma excepção definida.</p>`;
+    return;
+  }
+
+  // Ordenar por data
+  const sorted = [...dates].sort((a, b) => (a.startDate || '') > (b.startDate || '') ? 1 : -1);
+
+  el.innerHTML = sorted.map(d => {
+    const isOpen    = d.type === 'open_exception';
+    const isBreak   = d.type === 'break_override';
+    let period = formatDate(d.startDate);
+    if (d.endDate && d.endDate !== d.startDate) period += ` → ${formatDate(d.endDate)}`;
+
+    let extraInfo = '';
+    if (isOpen && d.openStart)  extraInfo = `<span style="font-size:0.78rem;color:var(--white-dim);"> · ${d.openStart}–${d.openEnd}</span>`;
+    if (isBreak && d.openStart) {
+      const info = d.openStart === 'none' ? 'sem pausa' : `${d.openStart}–${d.openEnd}`;
+      extraInfo = `<span style="font-size:0.78rem;color:var(--white-dim);"> · ${info}</span>`;
+    }
+
+    let chipClass = 'blocked-chip';
+    let icon = 'fa-ban';
+    if (isOpen)  { chipClass += ' chip-open';  icon = 'fa-calendar-plus'; }
+    if (isBreak) { chipClass += ' chip-break'; icon = 'fa-coffee'; }
+
+    const defaultLabel = isOpen ? 'Dia Extra' : isBreak ? 'Pausa alterada' : 'Bloqueado';
+
+    return `<div class="${chipClass}">
+      <i class="fas ${icon}"></i>
+      <span>
+        <strong>${escHtml(d.description || defaultLabel)}</strong>
+        — ${period}${extraInfo}
+      </span>
+      <button onclick="removeBlockedDate('${d.id}')" title="Remover">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  GESTÃO DE SLOTS POR DIA
+// ════════════════════════════════════════════════════════════════
+
+// Slots personalizados guardados em localStorage (key: "slots_YYYY-MM-DD")
+// Cada entrada: { blocked: ['09:00','09:30',...] }  — lista dos bloqueados
+// Se não existir entrada, todos os slots normais estão disponíveis.
+
+function getSettingsHours() {
+  const open  = document.getElementById('cfgOpen')?.value  || '09:00';
+  const close = document.getElementById('cfgClose')?.value || '19:00';
+  return { open, close };
+}
+
+function timeToMin(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function minToTime(m) {
+  const h  = Math.floor(m / 60);
+  const mn = m % 60;
+  return `${String(h).padStart(2,'0')}:${String(mn).padStart(2,'0')}`;
+}
+
+function generateAllSlots(open = '09:00', close = '19:00', step = 30) {
+  const slots = [];
+  let cur = timeToMin(open);
+  const end = timeToMin(close);
+  while (cur < end) {
+    slots.push(minToTime(cur));
+    cur += step;
+  }
+  return slots;
+}
+
+function getDayBlockedSlots(dateStr) {
+  try {
+    const raw = localStorage.getItem(`slots_${dateStr}`);
+    if (!raw) return [];
+    return JSON.parse(raw).blocked || [];
+  } catch { return []; }
+}
+
+function saveDayBlockedSlots(dateStr, blockedSlots) {
+  localStorage.setItem(`slots_${dateStr}`, JSON.stringify({ blocked: blockedSlots }));
+}
+
+async function loadDaySlots() {
+  const dateStr = document.getElementById('slotDate')?.value;
+  const grid    = document.getElementById('slotsGrid');
+  if (!grid) return;
+
+  if (!dateStr) {
+    grid.innerHTML = `<p style="color:var(--white-dim);font-size:0.85rem;"><i class="fas fa-info-circle"></i> Escolha uma data.</p>`;
+    return;
+  }
+
+  const { open, close } = getSettingsHours();
+  const allSlots   = generateAllSlots(open, close);
+  const blocked    = getDayBlockedSlots(dateStr);
+
+  // Marcações reais nesse dia
+  const dayBookings = allBookingsCache.filter(b =>
+    b.date === dateStr && b.status !== 'cancelled'
+  );
+  const bookedTimes = dayBookings.map(b => b.time?.slice(0, 5));
+
+  // Dia da semana
+  const d      = new Date(dateStr + 'T12:00:00');
+  const dow    = d.getDay();
+  const dayNames = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  const dayStatus = getDayStatus(dateStr);
+  const isClosed  = dayStatus.status === 'blocked';
+  const isExtra   = dayStatus.status === 'open_exception';
+
+  let headerHtml = `<div style="margin-bottom:10px;font-size:0.85rem;color:var(--white-dim);">
+    <strong style="color:var(--white)">${dayNames[dow]}, ${formatDate(dateStr)}</strong>`;
+  if (isClosed) headerHtml += ` &nbsp;<span style="color:var(--red);"><i class="fas fa-ban"></i> Dia bloqueado</span>`;
+  if (isExtra)  headerHtml += ` &nbsp;<span style="color:var(--green);"><i class="fas fa-star"></i> Dia extra aberto</span>`;
+  headerHtml += `</div>`;
+
+  let html = headerHtml + `<div class="slots-picker-inner">`;
+
+  allSlots.forEach(slot => {
+    const isBooked  = bookedTimes.includes(slot);
+    const isBlocked = blocked.includes(slot);
+
+    let cls = 'slot-pick';
+    let title = slot;
+
+    if (isBooked) {
+      const bk = dayBookings.find(b => b.time?.slice(0,5) === slot);
+      cls  += ' slot-booked';
+      title = `${slot} — ${bk?.name || 'Marcação'}`;
+    } else if (isBlocked) {
+      cls  += ' slot-blocked-manual';
+      title = `${slot} — Bloqueado`;
+    } else {
+      cls  += ' slot-available';
+      title = `${slot} — Disponível (clicar para bloquear)`;
+    }
+
+    html += `<div class="${cls}" title="${escHtml(title)}"
+      data-slot="${slot}"
+      data-booked="${isBooked ? '1' : '0'}"
+      ${!isBooked ? `onclick="toggleSlotBlock(this)"` : ''}
+    >
+      ${slot}
+      ${isBooked ? `<span class="slot-badge"><i class="fas fa-user"></i></span>` : ''}
+      ${isBlocked && !isBooked ? `<span class="slot-badge blocked-badge"><i class="fas fa-lock"></i></span>` : ''}
+    </div>`;
+  });
+
+  html += `</div>`;
+  grid.innerHTML = html;
+}
+
+function toggleSlotBlock(el) {
+  if (el.dataset.booked === '1') return; // não tocar em slots com marcação
+  el.classList.toggle('slot-blocked-manual');
+  el.classList.toggle('slot-available');
+  const isNowBlocked = el.classList.contains('slot-blocked-manual');
+  el.title = isNowBlocked
+    ? `${el.dataset.slot} — Bloqueado`
+    : `${el.dataset.slot} — Disponível (clicar para bloquear)`;
+
+  // Actualizar badge
+  let badge = el.querySelector('.slot-badge');
+  if (isNowBlocked) {
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'slot-badge blocked-badge';
+      el.appendChild(badge);
+    }
+    badge.innerHTML = '<i class="fas fa-lock"></i>';
+  } else {
+    if (badge) badge.remove();
+  }
+}
+
+function selectAllSlots() {
+  document.querySelectorAll('.slot-pick[data-booked="0"]').forEach(el => {
+    el.classList.remove('slot-blocked-manual');
+    el.classList.add('slot-available');
+    const badge = el.querySelector('.slot-badge');
+    if (badge) badge.remove();
+    el.title = `${el.dataset.slot} — Disponível`;
   });
 }
 
-function getBlockedLabel(dateStr) {
-  const b = blockedDatesCache.find(b =>
-    b.startDate === dateStr ||
-    (b.endDate && b.startDate <= dateStr && dateStr <= b.endDate)
-  );
-  return b?.description || 'Fechado';
+function clearAllSlots() {
+  document.querySelectorAll('.slot-pick[data-booked="0"]').forEach(el => {
+    el.classList.add('slot-blocked-manual');
+    el.classList.remove('slot-available');
+    let badge = el.querySelector('.slot-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'slot-badge blocked-badge';
+      el.appendChild(badge);
+    }
+    badge.innerHTML = '<i class="fas fa-lock"></i>';
+    el.title = `${el.dataset.slot} — Bloqueado`;
+  });
+}
+
+function saveDaySlots() {
+  const dateStr = document.getElementById('slotDate')?.value;
+  if (!dateStr) { toast('Escolha uma data', 'error'); return; }
+
+  const blocked = [];
+  document.querySelectorAll('.slot-pick[data-booked="0"]').forEach(el => {
+    if (el.classList.contains('slot-blocked-manual')) {
+      blocked.push(el.dataset.slot);
+    }
+  });
+
+  saveDayBlockedSlots(dateStr, blocked);
+  toast('Horários guardados!', 'success');
+
+  // Flash da mensagem de confirmação
+  const msg = document.getElementById('slotsSaveMsg');
+  if (msg) {
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+  }
+}
+
+function resetDaySlots() {
+  const dateStr = document.getElementById('slotDate')?.value;
+  if (!dateStr) return;
+  if (!confirm('Repor horários padrão para este dia?')) return;
+  localStorage.removeItem(`slots_${dateStr}`);
+  loadDaySlots();
+  toast('Horários repostos ao padrão', 'info');
 }
 
 // ── CONFIGURAÇÕES ────────────────────────────────────────────
 async function loadSettings() {
   try {
     const settings = await barbeariaAPI.getSettings();
-
     if (settings.workingHours) {
       const wh = settings.workingHours;
       setValue('cfgOpen',       wh.open       || '09:00');
@@ -643,19 +853,23 @@ async function loadSettings() {
       setValue('cfgBreakStart', wh.breakStart || '13:00');
       setValue('cfgBreakEnd',   wh.breakEnd   || '14:00');
 
+      const enableBreak = wh.enableBreak === true || wh.enableBreak === 'true';
+      const cbBreak = document.getElementById('cfgEnableBreak');
+      if (cbBreak) {
+        cbBreak.checked = enableBreak;
+        toggleBreakFields();
+      }
+
       const days = wh.workingDays || [2, 3, 4, 5, 6];
       document.querySelectorAll('input[name="workingDays"]').forEach(cb => {
         cb.checked = days.includes(parseInt(cb.value));
       });
     }
-
     if (settings.whatsapp) {
-      setValue('cfgWhatsapp',    settings.whatsapp.number           || '');
-      setValue('cfgWhatsappMsg', settings.whatsapp.mensagem_padrao  || '');
+      setValue('cfgWhatsapp',    settings.whatsapp.number          || '');
+      setValue('cfgWhatsappMsg', settings.whatsapp.mensagem_padrao || '');
     }
-  } catch (e) {
-    console.error('loadSettings:', e);
-  }
+  } catch (e) { console.error('loadSettings:', e); }
 }
 
 async function saveWorkingHours() {
@@ -669,10 +883,11 @@ async function saveWorkingHours() {
 
   const payload = {
     workingHours: {
-      open:       document.getElementById('cfgOpen').value,
-      close:      document.getElementById('cfgClose').value,
-      breakStart: document.getElementById('cfgBreakStart').value,
-      breakEnd:   document.getElementById('cfgBreakEnd').value,
+      open:        document.getElementById('cfgOpen').value,
+      close:       document.getElementById('cfgClose').value,
+      enableBreak: document.getElementById('cfgEnableBreak')?.checked || false,
+      breakStart:  document.getElementById('cfgBreakStart')?.value || '13:00',
+      breakEnd:    document.getElementById('cfgBreakEnd')?.value   || '14:00',
       workingDays: days
     }
   };
@@ -688,28 +903,79 @@ async function saveWorkingHours() {
 async function saveWhatsAppSettings() {
   const number  = document.getElementById('cfgWhatsapp').value.trim();
   const message = document.getElementById('cfgWhatsappMsg').value.trim();
-
-  if (!number) {
-    toast('Digite o número de WhatsApp', 'error');
-    return;
-  }
-
+  if (!number) { toast('Digite o número de WhatsApp', 'error'); return; }
   const payload = { whatsapp: { number, mensagem_padrao: message } };
   const result  = await barbeariaAPI.saveSettings(payload).catch(() => null);
-
   if (result?.success) {
-    toast('Configurações de WhatsApp guardadas!', 'success');
+    toast('WhatsApp guardado!', 'success');
   } else {
     toast('Erro ao guardar', 'error');
+  }
+}
+
+// ── PAUSA DE ALMOÇO ─────────────────────────────────────────
+function toggleBreakFields() {
+  const enabled = document.getElementById('cfgEnableBreak')?.checked;
+  const grp = document.getElementById('breakFieldsGroup');
+  if (grp) grp.style.display = enabled ? 'block' : 'none';
+}
+
+function toggleBreakOverrideFields() {
+  const type = document.getElementById('breakOverrideType')?.value;
+  const grp  = document.getElementById('breakOverrideHours');
+  if (grp) grp.style.display = type === 'change' ? 'block' : 'none';
+}
+
+async function addBreakOverride() {
+  const date = document.getElementById('breakOverrideDate')?.value;
+  const type = document.getElementById('breakOverrideType')?.value;
+
+  if (!date) { toast('Escolha uma data', 'error'); return; }
+
+  let payload;
+  if (type === 'remove') {
+    // Sem pausa neste dia
+    payload = {
+      description: 'Sem pausa de almoço',
+      startDate:   date,
+      type:        'break_override',
+      breakStart:  'none',
+      breakEnd:    'none'
+    };
+  } else {
+    const start = document.getElementById('breakOverrideStart')?.value;
+    const end   = document.getElementById('breakOverrideEnd')?.value;
+    if (!start || !end || end <= start) {
+      toast('Defina início e fim da pausa válidos', 'error');
+      return;
+    }
+    payload = {
+      description: `Pausa ${start}–${end}`,
+      startDate:   date,
+      type:        'break_override',
+      breakStart:  start,
+      breakEnd:    end
+    };
+  }
+
+  const result = await barbeariaAPI.addBlockedDate(payload).catch(() => null);
+  if (result?.success) {
+    const msg = type === 'remove'
+      ? `Sem pausa a ${formatDate(date)}`
+      : `Pausa alterada em ${formatDate(date)}`;
+    toast(msg, 'success');
+    document.getElementById('breakOverrideDate').value = '';
+    await loadBlockedDates();
+    renderCalendar();
+  } else {
+    toast(result?.error || 'Erro ao guardar', 'error');
   }
 }
 
 async function checkAPIStatus() {
   const el = document.getElementById('apiStatusDisplay');
   if (!el) return;
-
   el.innerHTML = `<span style="color:var(--white-dim)"><i class="fas fa-spinner fa-spin"></i> A verificar...</span>`;
-
   try {
     const result = await barbeariaAPI.testConnection();
     if (result?.success) {
@@ -724,10 +990,9 @@ async function checkAPIStatus() {
   }
 }
 
-// ── MODAL HELPERS ────────────────────────────────────────────
+// ── MODAL ────────────────────────────────────────────────────
 function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
 function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
-
 window.addEventListener('click', e => {
   document.querySelectorAll('.modal-overlay.open').forEach(overlay => {
     if (e.target === overlay) overlay.classList.remove('open');
@@ -745,19 +1010,15 @@ const TOAST_ICONS = {
 function toast(msg, type = 'info', duration = 3500) {
   const container = document.getElementById('toastContainer');
   if (!container) return;
-
   const el = document.createElement('div');
   el.className = `toast ${type}`;
   el.innerHTML = `<i class="${TOAST_ICONS[type] || 'fas fa-bell'}"></i><span>${escHtml(msg)}</span>`;
   container.appendChild(el);
-
   setTimeout(() => {
     el.classList.add('removing');
     setTimeout(() => el.remove(), 300);
   }, duration);
 }
-
-// Compatibilidade com funções existentes no api.js
 window.showToast = toast;
 
 // ── LOGOUT ───────────────────────────────────────────────────
@@ -769,9 +1030,7 @@ function logout() {
 }
 
 // ── UTILS ────────────────────────────────────────────────────
-function toDateStr(d) {
-  return d.toISOString().split('T')[0];
-}
+function toDateStr(d) { return d.toISOString().split('T')[0]; }
 
 function getMonday(d) {
   const date = new Date(d);
@@ -784,11 +1043,8 @@ function getMonday(d) {
 
 function formatDate(ds) {
   if (!ds) return '—';
-  try {
-    return new Date(ds + 'T12:00:00').toLocaleDateString('pt-PT');
-  } catch {
-    return ds;
-  }
+  try { return new Date(ds + 'T12:00:00').toLocaleDateString('pt-PT'); }
+  catch { return ds; }
 }
 
 function escHtml(str) {
