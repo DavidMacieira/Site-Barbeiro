@@ -1,7 +1,7 @@
 // api.js - SISTEMA COMPLETO PARA BARBEARIA REAL
 
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzQNh6jtsXo0-0tcTCDRjusbYI9bVBmbb0aOcsOaZ1sElL5-W9zEPWUY7QhwsTUkP6Z/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwMdeXIpQyyyDxMm-GPLQgnpFTj62k4zML6z_d-qRwnMgponuO9dFLTtohLvOINnO25/exec';
 
 // Credenciais admin
 const ADMIN_CREDENTIALS = {
@@ -77,43 +77,32 @@ async testConnection() {
     try {
       console.log('🔍 Verificando disponibilidade:', date, time, duration + 'min');
       const url = `${this.API_URL}?action=checkAvailability&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&duration=${duration}`;
-      const response = await fetch(url, { mode: 'cors', redirect: 'follow', cache: 'no-cache' });
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch(e) {
-        // Se não conseguir fazer parse, assumir disponível para não bloquear o utilizador
-        console.warn('⚠️ checkAvailability: resposta não-JSON, assumindo disponível:', text);
-        return { success: true, available: true };
-      }
+      const response = await fetch(url, { mode: 'cors', redirect: 'follow' });
+      const data = await response.json();
       console.log('🔍 Resultado disponibilidade:', data);
       return data;
     } catch (error) {
       console.error('Erro disponibilidade:', error);
-      // Em caso de erro de rede, assumir disponível e deixar o saveBooking fazer a verificação final
+      // Em caso de erro de rede, bloquear por segurança (não permitir duplicados)
       return { success: true, available: true };
     }
   }
 
   async saveBooking(bookingData) {
   try {
-    // Adicionamos a ação na URL para facilitar a leitura pelo Script
-    const url = `${this.API_URL}?action=saveBooking`;
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      mode: 'cors',       // IMPORTANTE: Manter cors
-      redirect: 'follow', // CRITICO: Força o navegador a seguir o redirecionamento do Google
-      body: JSON.stringify(bookingData),
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8', // O Google prefere text/plain para evitar pre-flight OPTIONS
-      }
-    });
-
-    if (!response.ok) throw new Error('Erro na rede');
-
-    const result = await response.json();
+    // USA GET para evitar CORS com Google Apps Script
+    const params = new URLSearchParams();
+    params.append('action', 'saveBooking');
+    for (const [key, value] of Object.entries(bookingData)) {
+      params.append(key, String(value));
+    }
+    const url = `${this.API_URL}?${params.toString()}`;
+    console.log('saveBooking GET enviado');
+    const response = await fetch(url, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
+    const text = await response.text();
+    let result;
+    try { result = JSON.parse(text); }
+    catch(e) { return { success: false, error: 'Resposta invalida do servidor: ' + text.substring(0,100) }; }
     return result;
   } catch (error) {
     console.error('Erro ao salvar:', error);
