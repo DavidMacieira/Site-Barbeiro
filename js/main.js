@@ -850,10 +850,10 @@ async function confirmBooking() {
       parseInt(serviceDuration)
     );
 
-    // So bloquear se a API responder claramente que NAO esta disponivel
+    // Só bloquear se o servidor confirmar explicitamente que não está disponível
     if (availability && availability.success === true && availability.available === false) {
       notificationSystem.show(
-        'Este horário já foi reservado por outro cliente. Por favor, escolha outro horário.',
+        'Este horário já foi reservado. Por favor, escolha outro horário.',
         'error',
         { title: '⏰ HORÁRIO INDISPONÍVEL', duration: 6000 }
       );
