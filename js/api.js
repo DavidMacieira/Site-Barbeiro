@@ -1,13 +1,13 @@
 // api.js - SISTEMA COMPLETO PARA BARBEARIA REAL
 
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzQNh6jtsXo0-0tcTCDRjusbYI9bVBmbb0aOcsOaZ1sElL5-W9zEPWUY7QhwsTUkP6Z/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxZ8me30i1NRAbFR98ArPVuaw3-bnocfNRcd7X00VukfKV93DvJFr-HfxfwnP7ynpTp/exec';
 
 // Credenciais admin
 const ADMIN_CREDENTIALS = {
   email: 'jangeirasbarbeiro@admin.com',
   password: 'gostodecortarcabelo'
-};
+};  
 
 class BarbeariaAPI {
   constructor() {
