@@ -1,7 +1,7 @@
 // api.js - SISTEMA COMPLETO PARA BARBEARIA REAL
 
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwMdeXIpQyyyDxMm-GPLQgnpFTj62k4zML6z_d-qRwnMgponuO9dFLTtohLvOINnO25/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxZ8me30i1NRAbFR98ArPVuaw3-bnocfNRcd7X00VukfKV93DvJFr-HfxfwnP7ynpTp/exec';
 
 // Credenciais admin
 const ADMIN_CREDENTIALS = {
@@ -84,22 +84,41 @@ async testConnection() {
     } catch (error) {
       console.error('Erro disponibilidade:', error);
       // Em caso de erro de rede, bloquear por segurança (não permitir duplicados)
-      return { success: true, available: true }; // fallback: deixa o servidor verificar no saveBooking
+      return { success: true, available: true }; // fallback seguro
     }
   }
 
   async saveBooking(bookingData) {
-    try {
-      const params = new URLSearchParams({ action: 'saveBooking', ...bookingData });
-      const url = `${this.API_URL}?${params.toString()}`;
-      const response = await fetch(url, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
-      const text = await response.text();
-      try { return JSON.parse(text); }
-      catch(e) { return { success: false, error: 'Resposta invalida: ' + text.substring(0,100) }; }
-    } catch (error) {
-      console.error('Erro ao salvar:', error);
-      return { success: false, error: error.message };
-    }
+    return new Promise((resolve) => {
+      // JSONP: única forma 100% fiável com Google Apps Script + CORS
+      const callbackName = 'jsonp_cb_' + Date.now();
+      const timeout = setTimeout(() => {
+        delete window[callbackName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        resolve({ success: false, error: 'Timeout — servidor demorou demasiado' });
+      }, 15000);
+
+      window[callbackName] = function(data) {
+        clearTimeout(timeout);
+        delete window[callbackName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        resolve(data);
+      };
+
+      const params = new URLSearchParams({ action: 'saveBooking', callback: callbackName });
+      for (const [key, value] of Object.entries(bookingData)) {
+        params.append(key, value);
+      }
+
+      const script = document.createElement('script');
+      script.src = `${this.API_URL}?${params.toString()}`;
+      script.onerror = () => {
+        clearTimeout(timeout);
+        delete window[callbackName];
+        resolve({ success: false, error: 'Erro ao carregar script' });
+      };
+      document.head.appendChild(script);
+    });
   }
 
   async getServices() {
@@ -202,11 +221,14 @@ async getBookings(filters = {}) {
 
   async updateBookingStatus(bookingId, status) {
     try {
-      const params = new URLSearchParams({ action: 'updateBookingStatus', bookingId, status });
-      const response = await fetch(`${this.API_URL}?${params.toString()}`, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
-      const text = await response.text();
-      try { return JSON.parse(text); }
-      catch(e) { return { success: false, error: text.substring(0,100) }; }
+      console.log(`🔄 Atualizando ${bookingId} para ${status}`);
+      const response = await fetch(`${this.API_URL}?action=updateBookingStatus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ bookingId, status })
+      });
+      
+      return await response.json();
     } catch (error) {
       console.error('Erro updateStatus:', error);
       return { success: false, error: error.message };
@@ -215,11 +237,14 @@ async getBookings(filters = {}) {
 
   async deleteBooking(bookingId) {
     try {
-      const params = new URLSearchParams({ action: 'deleteBooking', bookingId });
-      const response = await fetch(`${this.API_URL}?${params.toString()}`, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
-      const text = await response.text();
-      try { return JSON.parse(text); }
-      catch(e) { return { success: false, error: text.substring(0,100) }; }
+      console.log(`🗑️ Apagando reserva ${bookingId}`);
+      const response = await fetch(`${this.API_URL}?action=deleteBooking`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ bookingId })
+      });
+      
+      return await response.json();
     } catch (error) {
       console.error('Erro deleteBooking:', error);
       return { success: false, error: error.message };
@@ -250,14 +275,13 @@ async getBookings(filters = {}) {
 
   async saveSettings(settingsData) {
     try {
-      const params = new URLSearchParams({ action: 'saveSettings' });
-      // settingsData pode ter objectos aninhados — serializar
-      params.append('workingHours', JSON.stringify(settingsData.workingHours || {}));
-      params.append('whatsapp', JSON.stringify(settingsData.whatsapp || {}));
-      const response = await fetch(`${this.API_URL}?${params.toString()}`, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
-      const text = await response.text();
-      try { return JSON.parse(text); }
-      catch(e) { return { success: false, error: text.substring(0,100) }; }
+      const response = await fetch(`${this.API_URL}?action=saveSettings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(settingsData)
+      });
+      
+      return await response.json();
     } catch (error) {
       console.error('Erro saveSettings:', error);
       return { success: false, error: error.message };
@@ -277,11 +301,13 @@ async getBookings(filters = {}) {
 
   async addBlockedDate(dateData) {
     try {
-      const params = new URLSearchParams({ action: 'addBlockedDate', ...dateData });
-      const response = await fetch(`${this.API_URL}?${params.toString()}`, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
-      const text = await response.text();
-      try { return JSON.parse(text); }
-      catch(e) { return { success: false, error: text.substring(0,100) }; }
+      const response = await fetch(`${this.API_URL}?action=addBlockedDate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(dateData)
+      });
+      
+      return await response.json();
     } catch (error) {
       console.error('Erro addBlockedDate:', error);
       return { success: false, error: error.message };
@@ -290,11 +316,13 @@ async getBookings(filters = {}) {
 
   async removeBlockedDate(dateId) {
     try {
-      const params = new URLSearchParams({ action: 'removeBlockedDate', dateId });
-      const response = await fetch(`${this.API_URL}?${params.toString()}`, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
-      const text = await response.text();
-      try { return JSON.parse(text); }
-      catch(e) { return { success: false, error: text.substring(0,100) }; }
+      const response = await fetch(`${this.API_URL}?action=removeBlockedDate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ dateId })
+      });
+      
+      return await response.json();
     } catch (error) {
       console.error('Erro removeBlockedDate:', error);
       return { success: false, error: error.message };
