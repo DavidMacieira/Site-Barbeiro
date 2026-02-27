@@ -84,31 +84,23 @@ async testConnection() {
     } catch (error) {
       console.error('Erro disponibilidade:', error);
       // Em caso de erro de rede, bloquear por segurança (não permitir duplicados)
-      return { success: true, available: true };
+      return { success: true, available: true }; // fallback: deixa o servidor verificar no saveBooking
     }
   }
 
   async saveBooking(bookingData) {
-  try {
-    // USA GET para evitar CORS com Google Apps Script
-    const params = new URLSearchParams();
-    params.append('action', 'saveBooking');
-    for (const [key, value] of Object.entries(bookingData)) {
-      params.append(key, String(value));
+    try {
+      const params = new URLSearchParams({ action: 'saveBooking', ...bookingData });
+      const url = `${this.API_URL}?${params.toString()}`;
+      const response = await fetch(url, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
+      const text = await response.text();
+      try { return JSON.parse(text); }
+      catch(e) { return { success: false, error: 'Resposta invalida: ' + text.substring(0,100) }; }
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+      return { success: false, error: error.message };
     }
-    const url = `${this.API_URL}?${params.toString()}`;
-    console.log('saveBooking GET enviado');
-    const response = await fetch(url, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
-    const text = await response.text();
-    let result;
-    try { result = JSON.parse(text); }
-    catch(e) { return { success: false, error: 'Resposta invalida do servidor: ' + text.substring(0,100) }; }
-    return result;
-  } catch (error) {
-    console.error('Erro ao salvar:', error);
-    return { success: false, error: error.message };
   }
-}
 
   async getServices() {
     try {
@@ -210,14 +202,11 @@ async getBookings(filters = {}) {
 
   async updateBookingStatus(bookingId, status) {
     try {
-      console.log(`🔄 Atualizando ${bookingId} para ${status}`);
-      const response = await fetch(`${this.API_URL}?action=updateBookingStatus`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ bookingId, status })
-      });
-      
-      return await response.json();
+      const params = new URLSearchParams({ action: 'updateBookingStatus', bookingId, status });
+      const response = await fetch(`${this.API_URL}?${params.toString()}`, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
+      const text = await response.text();
+      try { return JSON.parse(text); }
+      catch(e) { return { success: false, error: text.substring(0,100) }; }
     } catch (error) {
       console.error('Erro updateStatus:', error);
       return { success: false, error: error.message };
@@ -226,14 +215,11 @@ async getBookings(filters = {}) {
 
   async deleteBooking(bookingId) {
     try {
-      console.log(`🗑️ Apagando reserva ${bookingId}`);
-      const response = await fetch(`${this.API_URL}?action=deleteBooking`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ bookingId })
-      });
-      
-      return await response.json();
+      const params = new URLSearchParams({ action: 'deleteBooking', bookingId });
+      const response = await fetch(`${this.API_URL}?${params.toString()}`, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
+      const text = await response.text();
+      try { return JSON.parse(text); }
+      catch(e) { return { success: false, error: text.substring(0,100) }; }
     } catch (error) {
       console.error('Erro deleteBooking:', error);
       return { success: false, error: error.message };
@@ -264,13 +250,14 @@ async getBookings(filters = {}) {
 
   async saveSettings(settingsData) {
     try {
-      const response = await fetch(`${this.API_URL}?action=saveSettings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(settingsData)
-      });
-      
-      return await response.json();
+      const params = new URLSearchParams({ action: 'saveSettings' });
+      // settingsData pode ter objectos aninhados — serializar
+      params.append('workingHours', JSON.stringify(settingsData.workingHours || {}));
+      params.append('whatsapp', JSON.stringify(settingsData.whatsapp || {}));
+      const response = await fetch(`${this.API_URL}?${params.toString()}`, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
+      const text = await response.text();
+      try { return JSON.parse(text); }
+      catch(e) { return { success: false, error: text.substring(0,100) }; }
     } catch (error) {
       console.error('Erro saveSettings:', error);
       return { success: false, error: error.message };
@@ -290,13 +277,11 @@ async getBookings(filters = {}) {
 
   async addBlockedDate(dateData) {
     try {
-      const response = await fetch(`${this.API_URL}?action=addBlockedDate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(dateData)
-      });
-      
-      return await response.json();
+      const params = new URLSearchParams({ action: 'addBlockedDate', ...dateData });
+      const response = await fetch(`${this.API_URL}?${params.toString()}`, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
+      const text = await response.text();
+      try { return JSON.parse(text); }
+      catch(e) { return { success: false, error: text.substring(0,100) }; }
     } catch (error) {
       console.error('Erro addBlockedDate:', error);
       return { success: false, error: error.message };
@@ -305,13 +290,11 @@ async getBookings(filters = {}) {
 
   async removeBlockedDate(dateId) {
     try {
-      const response = await fetch(`${this.API_URL}?action=removeBlockedDate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ dateId })
-      });
-      
-      return await response.json();
+      const params = new URLSearchParams({ action: 'removeBlockedDate', dateId });
+      const response = await fetch(`${this.API_URL}?${params.toString()}`, { method: 'GET', mode: 'cors', redirect: 'follow', cache: 'no-cache' });
+      const text = await response.text();
+      try { return JSON.parse(text); }
+      catch(e) { return { success: false, error: text.substring(0,100) }; }
     } catch (error) {
       console.error('Erro removeBlockedDate:', error);
       return { success: false, error: error.message };
