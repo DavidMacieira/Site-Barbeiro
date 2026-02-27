@@ -1,7 +1,7 @@
 // api.js - SISTEMA COMPLETO PARA BARBEARIA REAL
 
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxsH40q9dLvXpYPXBdoZjdJUWSkATJ30YB4zKmTLO2AurehpXhXZIKkhI9g95dnIx-L/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzQNh6jtsXo0-0tcTCDRjusbYI9bVBmbb0aOcsOaZ1sElL5-W9zEPWUY7QhwsTUkP6Z/exec';
 
 // Credenciais admin
 const ADMIN_CREDENTIALS = {
@@ -89,29 +89,27 @@ async testConnection() {
   }
 
   async saveBooking(bookingData) {
-    try {
-    console.log('💾 Salvando reserva REAL:', bookingData);
-      
-    const response = await fetch(`${this.API_URL}?action=saveBooking`, {
-      method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      headers: { 
-        'Content-Type': 'text/plain'
-      },
-      body: JSON.stringify(bookingData)
-    });
-    const text = await response.text();
-    const result = JSON.parse(text);
-    console.log('Resultado API:', result);
+  try {
+    // Adicionamos a ação na URL para facilitar a leitura pelo Script
+    const url = `${this.API_URL}?action=saveBooking`;
     
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',       // IMPORTANTE: Manter cors
+      redirect: 'follow', // CRITICO: Força o navegador a seguir o redirecionamento do Google
+      body: JSON.stringify(bookingData),
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8', // O Google prefere text/plain para evitar pre-flight OPTIONS
+      }
+    });
+
+    if (!response.ok) throw new Error('Erro na rede');
+
+    const result = await response.json();
     return result;
   } catch (error) {
-    console.error('❌ Erro grave saveBooking:', error);
-    return {
-      success: false,
-      error: 'Erro de conexão. Tente novamente.'
-    };
+    console.error('Erro ao salvar:', error);
+    return { success: false, error: error.message };
   }
 }
 
