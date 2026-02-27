@@ -1,7 +1,7 @@
 // api.js - SISTEMA COMPLETO PARA BARBEARIA REAL
 
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxZ8me30i1NRAbFR98ArPVuaw3-bnocfNRcd7X00VukfKV93DvJFr-HfxfwnP7ynpTp/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzPXwRUfnfYnn6ypazgLGwPpikN0jh7DKpni5u-yrDZNgw_UZV21u8rX6sXCHS00JG3/exec';
 
 // Credenciais admin
 const ADMIN_CREDENTIALS = {
