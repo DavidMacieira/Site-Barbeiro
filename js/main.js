@@ -850,21 +850,14 @@ async function confirmBooking() {
       parseInt(serviceDuration)
     );
 
-    if (!availability || !availability.available) {
+    // So bloquear se a API responder claramente que NAO esta disponivel
+    if (availability && availability.success === true && availability.available === false) {
       notificationSystem.show(
-        availability?.success === false
-          ? 'Não foi possível verificar o horário. Verifique a sua ligação e tente novamente.'
-          : 'Este horário já foi reservado por outro cliente. Por favor, escolha outro horário.',
+        'Este horário já foi reservado por outro cliente. Por favor, escolha outro horário.',
         'error',
-        {
-          title: availability?.success === false ? '⚠️ ERRO DE REDE' : '⏰ HORÁRIO INDISPONÍVEL',
-          duration: 6000
-        }
+        { title: '⏰ HORÁRIO INDISPONÍVEL', duration: 6000 }
       );
-
-      // Recarregar slots para mostrar o slot como ocupado
       await loadAvailableTimeSlots();
-
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;

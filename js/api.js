@@ -77,14 +77,22 @@ async testConnection() {
     try {
       console.log('🔍 Verificando disponibilidade:', date, time, duration + 'min');
       const url = `${this.API_URL}?action=checkAvailability&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&duration=${duration}`;
-      const response = await fetch(url, { mode: 'cors', redirect: 'follow' });
-      const data = await response.json();
+      const response = await fetch(url, { mode: 'cors', redirect: 'follow', cache: 'no-cache' });
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch(e) {
+        // Se não conseguir fazer parse, assumir disponível para não bloquear o utilizador
+        console.warn('⚠️ checkAvailability: resposta não-JSON, assumindo disponível:', text);
+        return { success: true, available: true };
+      }
       console.log('🔍 Resultado disponibilidade:', data);
       return data;
     } catch (error) {
       console.error('Erro disponibilidade:', error);
-      // Em caso de erro de rede, bloquear por segurança (não permitir duplicados)
-      return { success: false, available: false };
+      // Em caso de erro de rede, assumir disponível e deixar o saveBooking fazer a verificação final
+      return { success: true, available: true };
     }
   }
 
