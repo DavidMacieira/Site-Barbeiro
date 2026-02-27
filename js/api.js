@@ -1,7 +1,7 @@
 // api.js - SISTEMA COMPLETO PARA BARBEARIA REAL
 
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwEqFsrIerMq3msK_VfGkJ0PLacDfyu1OQhQS9QgA-CrhWzeHDRNCMuLV1o52OIg0kH/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx-cco_haWdl-RgVposa-u5HqTWEDgnXdvQxfDFlSyQoEpQkfatDgYxG3xp-Ls7msN1/exec';
 
 // Credenciais admin
 const ADMIN_CREDENTIALS = {
@@ -88,22 +88,27 @@ async testConnection() {
     }
   }
 
-  async saveBooking(bookingData) {
-    try {
+async saveBooking(bookingData) {
+  try {
     console.log('💾 Salvando reserva REAL:', bookingData);
-      
-    const response = await fetch(`${this.API_URL}?action=saveBooking`, {
-      method: 'POST',
-      mode: 'cors',
-      headers: { 
-        'Content-Type': 'text/plain' // **MUDAR para text/plain**
-      },
-      body: JSON.stringify(bookingData)
-    });
-    const result = await response.json();
-    console.log('Resultado API:', result);
     
+    const params = new URLSearchParams();
+    params.append('action', 'saveBooking');
+    for (const key in bookingData) {
+      params.append(key, bookingData[key]);
+    }
+
+    const response = await fetch(`${this.API_URL}?${params.toString()}`, {
+      method: 'GET',
+      mode: 'cors',
+      redirect: 'follow'
+    });
+
+    const text = await response.text();
+    const result = JSON.parse(text);
+    console.log('Resultado API:', result);
     return result;
+
   } catch (error) {
     console.error('❌ Erro grave saveBooking:', error);
     return {
