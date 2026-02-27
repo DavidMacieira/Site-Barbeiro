@@ -75,47 +75,42 @@ async testConnection() {
 
   async checkAvailability(date, time, duration = 30) {
     try {
-      console.log('🔍 Verificando disponibilidade:', date, time, duration + 'min');
       const url = `${this.API_URL}?action=checkAvailability&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&duration=${duration}`;
-      const response = await fetch(url, { mode: 'cors', redirect: 'follow' });
-      const data = await response.json();
-      console.log('🔍 Resultado disponibilidade:', data);
-      return data;
+      const response = await fetch(url, { mode: 'cors', redirect: 'follow', cache: 'no-cache' });
+      const text = await response.text();
+      try { return JSON.parse(text); }
+      catch(e) { return { success: true, available: true }; }
     } catch (error) {
-      console.error('Erro disponibilidade:', error);
-      // Em caso de erro de rede, bloquear por segurança (não permitir duplicados)
-      return { success: true, available: true }; // fallback seguro
+      // Falha de rede: deixar passar, o servidor verifica no saveBooking
+      return { success: true, available: true };
     }
   }
 
   async saveBooking(bookingData) {
     return new Promise((resolve) => {
-      // JSONP: única forma 100% fiável com Google Apps Script + CORS
-      const callbackName = 'jsonp_cb_' + Date.now();
-      const timeout = setTimeout(() => {
+      const callbackName = 'gs_cb_' + Date.now();
+      const timer = setTimeout(() => {
         delete window[callbackName];
         if (script.parentNode) script.parentNode.removeChild(script);
-        resolve({ success: false, error: 'Timeout — servidor demorou demasiado' });
+        resolve({ success: false, error: 'Timeout — sem resposta do servidor' });
       }, 15000);
 
       window[callbackName] = function(data) {
-        clearTimeout(timeout);
+        clearTimeout(timer);
         delete window[callbackName];
         if (script.parentNode) script.parentNode.removeChild(script);
         resolve(data);
       };
 
       const params = new URLSearchParams({ action: 'saveBooking', callback: callbackName });
-      for (const [key, value] of Object.entries(bookingData)) {
-        params.append(key, value);
-      }
+      for (const [k, v] of Object.entries(bookingData)) params.append(k, v);
 
       const script = document.createElement('script');
       script.src = `${this.API_URL}?${params.toString()}`;
       script.onerror = () => {
-        clearTimeout(timeout);
+        clearTimeout(timer);
         delete window[callbackName];
-        resolve({ success: false, error: 'Erro ao carregar script' });
+        resolve({ success: false, error: 'Erro ao contactar servidor' });
       };
       document.head.appendChild(script);
     });
@@ -220,35 +215,27 @@ async getBookings(filters = {}) {
   }
 
   async updateBookingStatus(bookingId, status) {
-    try {
-      console.log(`🔄 Atualizando ${bookingId} para ${status}`);
-      const response = await fetch(`${this.API_URL}?action=updateBookingStatus`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ bookingId, status })
-      });
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Erro updateStatus:', error);
-      return { success: false, error: error.message };
-    }
+    return new Promise((resolve) => {
+      const callbackName = 'gs_cb_' + Date.now();
+      const timer = setTimeout(() => { delete window[callbackName]; resolve({ success: false, error: 'Timeout' }); }, 15000);
+      window[callbackName] = (data) => { clearTimeout(timer); delete window[callbackName]; if (script.parentNode) script.parentNode.removeChild(script); resolve(data); };
+      const script = document.createElement('script');
+      script.src = `${this.API_URL}?action=updateBookingStatus&bookingId=${encodeURIComponent(bookingId)}&status=${encodeURIComponent(status)}&callback=${callbackName}`;
+      script.onerror = () => { clearTimeout(timer); delete window[callbackName]; resolve({ success: false, error: 'Erro' }); };
+      document.head.appendChild(script);
+    });
   }
 
   async deleteBooking(bookingId) {
-    try {
-      console.log(`🗑️ Apagando reserva ${bookingId}`);
-      const response = await fetch(`${this.API_URL}?action=deleteBooking`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ bookingId })
-      });
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Erro deleteBooking:', error);
-      return { success: false, error: error.message };
-    }
+    return new Promise((resolve) => {
+      const callbackName = 'gs_cb_' + Date.now();
+      const timer = setTimeout(() => { delete window[callbackName]; resolve({ success: false, error: 'Timeout' }); }, 15000);
+      window[callbackName] = (data) => { clearTimeout(timer); delete window[callbackName]; if (script.parentNode) script.parentNode.removeChild(script); resolve(data); };
+      const script = document.createElement('script');
+      script.src = `${this.API_URL}?action=deleteBooking&bookingId=${encodeURIComponent(bookingId)}&callback=${callbackName}`;
+      script.onerror = () => { clearTimeout(timer); delete window[callbackName]; resolve({ success: false, error: 'Erro' }); };
+      document.head.appendChild(script);
+    });
   }
 
   async getStats() {
@@ -274,18 +261,18 @@ async getBookings(filters = {}) {
   }
 
   async saveSettings(settingsData) {
-    try {
-      const response = await fetch(`${this.API_URL}?action=saveSettings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(settingsData)
-      });
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Erro saveSettings:', error);
-      return { success: false, error: error.message };
-    }
+    return new Promise((resolve) => {
+      const callbackName = 'gs_cb_' + Date.now();
+      const timer = setTimeout(() => { delete window[callbackName]; resolve({ success: false, error: 'Timeout' }); }, 15000);
+      window[callbackName] = (data) => { clearTimeout(timer); delete window[callbackName]; if (script.parentNode) script.parentNode.removeChild(script); resolve(data); };
+      const params = new URLSearchParams({ action: 'saveSettings', callback: callbackName });
+      params.append('workingHours', JSON.stringify(settingsData.workingHours || {}));
+      params.append('whatsapp', JSON.stringify(settingsData.whatsapp || {}));
+      const script = document.createElement('script');
+      script.src = `${this.API_URL}?${params.toString()}`;
+      script.onerror = () => { clearTimeout(timer); delete window[callbackName]; resolve({ success: false, error: 'Erro' }); };
+      document.head.appendChild(script);
+    });
   }
 
   async getBlockedDates() {
@@ -300,33 +287,28 @@ async getBookings(filters = {}) {
   }
 
   async addBlockedDate(dateData) {
-    try {
-      const response = await fetch(`${this.API_URL}?action=addBlockedDate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(dateData)
-      });
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Erro addBlockedDate:', error);
-      return { success: false, error: error.message };
-    }
+    return new Promise((resolve) => {
+      const callbackName = 'gs_cb_' + Date.now();
+      const timer = setTimeout(() => { delete window[callbackName]; resolve({ success: false, error: 'Timeout' }); }, 15000);
+      window[callbackName] = (data) => { clearTimeout(timer); delete window[callbackName]; if (script.parentNode) script.parentNode.removeChild(script); resolve(data); };
+      const params = new URLSearchParams({ action: 'addBlockedDate', callback: callbackName, ...dateData });
+      const script = document.createElement('script');
+      script.src = `${this.API_URL}?${params.toString()}`;
+      script.onerror = () => { clearTimeout(timer); delete window[callbackName]; resolve({ success: false, error: 'Erro' }); };
+      document.head.appendChild(script);
+    });
   }
 
   async removeBlockedDate(dateId) {
-    try {
-      const response = await fetch(`${this.API_URL}?action=removeBlockedDate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ dateId })
-      });
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Erro removeBlockedDate:', error);
-      return { success: false, error: error.message };
-    }
+    return new Promise((resolve) => {
+      const callbackName = 'gs_cb_' + Date.now();
+      const timer = setTimeout(() => { delete window[callbackName]; resolve({ success: false, error: 'Timeout' }); }, 15000);
+      window[callbackName] = (data) => { clearTimeout(timer); delete window[callbackName]; if (script.parentNode) script.parentNode.removeChild(script); resolve(data); };
+      const script = document.createElement('script');
+      script.src = `${this.API_URL}?action=removeBlockedDate&dateId=${encodeURIComponent(dateId)}&callback=${callbackName}`;
+      script.onerror = () => { clearTimeout(timer); delete window[callbackName]; resolve({ success: false, error: 'Erro' }); };
+      document.head.appendChild(script);
+    });
   }
 
   // ==================== FUNÇÕES AUXILIARES ====================
