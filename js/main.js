@@ -1176,3 +1176,29 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 });
 
 console.log('✅ main.js v2.0 completamente carregado!');
+
+// ==================== CONTROLO DO MENU MOBILE ====================
+document.addEventListener('DOMContentLoaded', () => {
+  const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+  const navLinks = document.getElementById('navLinks');
+
+  if (mobileMenuBtn && navLinks) {
+    mobileMenuBtn.addEventListener('click', () => {
+      // Alterna a classe 'active' para abrir/fechar o menu
+      navLinks.classList.toggle('active');
+      mobileMenuBtn.classList.toggle('active');
+      
+      // Bloqueia o scroll do corpo quando o menu está aberto
+      document.body.style.overflow = navLinks.classList.contains('active') ? 'hidden' : '';
+    });
+
+    // Fecha o menu automaticamente ao clicar num link (ex: "Serviços")
+    navLinks.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        navLinks.classList.remove('active');
+        mobileMenuBtn.classList.remove('active');
+        document.body.style.overflow = '';
+      });
+    });
+  }
+});
