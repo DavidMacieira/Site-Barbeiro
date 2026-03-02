@@ -1217,6 +1217,382 @@ table.data-table {
   .topbar-time { display: none; }
 }
 
+/* ═══════════════════════════════════════════════════════
+   MOBILE — PAINEL DO BARBEIRO (≤ 768px)
+   Bottom nav app-style, touch-friendly, clean
+═══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Layout base ── */
+  .admin-layout {
+    grid-template-rows: 56px 1fr;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "topbar"
+      "main";
+  }
+
+  .admin-sidebar { display: none; }
+
+  /* ── Topbar compacta ── */
+  .admin-topbar {
+    padding: 0 16px;
+    height: 56px;
+  }
+
+  .topbar-brand h1 { font-size: 1rem; }
+  .topbar-brand span { display: none; }
+  .topbar-brand .brand-icon { width: 32px; height: 32px; font-size: 14px; }
+  .topbar-time { display: none; }
+  .topbar-date { display: none; }
+
+  /* Botão Sair: só ícone */
+  .topbar-right .btn span,
+  .topbar-right .btn-sm { font-size: 0; padding: 8px 10px; }
+  .topbar-right .btn i { font-size: 16px; margin: 0; }
+
+  /* ── Main content ── */
+  .admin-main {
+    padding: 14px 12px;
+    padding-bottom: 90px; /* espaço para bottom nav */
+    overflow-y: auto;
+    height: calc(100vh - 56px);
+  }
+
+  /* ── Stat cards: 2x2 compactos ── */
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    padding: 14px 12px;
+    gap: 12px;
+  }
+
+  .stat-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 15px;
+  }
+
+  .stat-value { font-size: 1.5rem; }
+  .stat-label { font-size: 0.7rem; }
+
+  /* ── Cards ── */
+  .card-header { padding: 14px 16px; }
+  .card-body { padding: 16px; }
+  .card-header h3 { font-size: 0.92rem; }
+
+  /* ── Calendar toolbar ── */
+  .cal-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .cal-nav {
+    justify-content: space-between;
+  }
+
+  .cal-title {
+    font-size: 1rem;
+    min-width: unset;
+    flex: 1;
+    text-align: center;
+  }
+
+  .cal-today-btn { padding: 5px 10px; font-size: 0.73rem; }
+
+  .view-toggle {
+    width: 100%;
+  }
+
+  .view-toggle button {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* ── Semana: scroll horizontal, colunas mínimas ── */
+  .week-grid {
+    grid-template-columns: 48px repeat(7, minmax(72px, 1fr));
+    font-size: 0.75rem;
+  }
+
+  .week-day-col { min-width: 72px; }
+  .week-day-header { height: 48px; }
+  .week-day-name { font-size: 0.6rem; }
+  .week-day-date { font-size: 0.88rem; }
+  .week-slot { height: 52px; }
+  .week-time-label { height: 52px; font-size: 0.65rem; padding: 3px 5px 0; }
+
+  .bb-time { font-size: 0.72rem; }
+  .bb-name { font-size: 0.68rem; }
+  .bb-service { display: none; }
+
+  /* ── Mês ── */
+  .month-grid { padding: 10px; }
+  .month-day { min-height: 60px; padding: 5px; }
+  .month-day-num { font-size: 0.85rem; }
+  .month-mini-booking { font-size: 0.6rem; padding: 2px 4px; }
+  .month-weekday-label { font-size: 0.6rem; padding: 5px 0; }
+
+  /* ── Tabela de reservas: cards em vez de tabela ── */
+  .table-wrap { border: none; }
+
+  table.data-table,
+  .data-table thead,
+  .data-table tbody,
+  .data-table tr,
+  .data-table th,
+  .data-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .data-table thead { display: none; }
+
+  .data-table tbody tr {
+    background: var(--black-3);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: var(--r-lg);
+    padding: 14px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+
+  .data-table tbody tr:last-child { border-bottom: 1px solid rgba(255,255,255,0.06); }
+
+  .data-table td {
+    padding: 3px 0;
+    font-size: 0.85rem;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .data-table td::before {
+    content: attr(data-label);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--white-dim);
+    flex-shrink: 0;
+    margin-right: 8px;
+    min-width: 70px;
+  }
+
+  .data-table td.muted { font-size: 0.82rem; }
+
+  /* Linha de ações em baixo do card */
+  .data-table td:last-child {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .data-table td:last-child::before { display: none; }
+
+  /* ── Filter bar: coluna ── */
+  .filter-bar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .filter-bar .form-group {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .filter-bar .btn { width: 100%; justify-content: center; }
+
+  /* ── Formulários ── */
+  .settings-row { grid-template-columns: 1fr; gap: 12px; }
+  .settings-grid { grid-template-columns: 1fr; gap: 14px; }
+  .schedule-manager-grid { grid-template-columns: 1fr; gap: 14px; }
+
+  /* Inputs e selects maiores para toque fácil */
+  .form-control {
+    padding: 12px 14px;
+    font-size: 16px; /* evita zoom automático no iOS */
+    min-height: 48px;
+  }
+
+  .btn {
+    padding: 12px 18px;
+    font-size: 0.88rem;
+    min-height: 46px;
+  }
+
+  .btn-sm {
+    padding: 9px 14px;
+    font-size: 0.8rem;
+    min-height: 38px;
+  }
+
+  /* ── Slots picker: botões maiores ── */
+  .slot-pick {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    min-width: 78px;
+    min-height: 44px;
+  }
+
+  /* ── Modal: ocupa ecrã quase todo, sobe do fundo ── */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal {
+    max-width: 100%;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    animation: modal-slide-up 0.3s var(--ease);
+  }
+
+  @keyframes modal-slide-up {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .modal-header { padding: 16px 20px; }
+  .modal-body { padding: 16px 20px; gap: 14px; }
+  .modal-footer { padding: 12px 20px; flex-wrap: wrap; gap: 8px; }
+  .modal-footer .btn { flex: 1; min-width: 100px; }
+
+  .booking-detail-grid { grid-template-columns: 1fr; gap: 10px; }
+
+  /* ── Toast: fundo, 100% largura ── */
+  .toast-container {
+    bottom: 84px; /* acima do bottom nav */
+    right: 12px;
+    left: 12px;
+  }
+
+  .toast {
+    min-width: unset;
+    max-width: 100%;
+  }
+
+  /* ── Working days: grid 4 colunas ── */
+  .working-days {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .day-toggle {
+    justify-content: center;
+    padding: 10px 6px;
+    font-size: 0.8rem;
+  }
+
+  /* ── Chips de bloqueio ── */
+  .blocked-chip {
+    font-size: 0.82rem;
+    padding: 6px 12px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   BOTTOM NAVIGATION BAR — apenas mobile
+═══════════════════════════════════════════════════════ */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 66px;
+    background: var(--black-2);
+    border-top: 1px solid rgba(201,169,110,0.15);
+    z-index: 150;
+    align-items: stretch;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mob-nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: transparent;
+    border: none;
+    color: var(--white-dim);
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: color 0.2s;
+    position: relative;
+    padding: 0 4px;
+  }
+
+  .mob-nav-btn i {
+    font-size: 19px;
+    transition: color 0.2s, transform 0.2s var(--ease);
+  }
+
+  .mob-nav-btn.active {
+    color: var(--gold);
+  }
+
+  .mob-nav-btn.active i {
+    transform: translateY(-1px);
+  }
+
+  .mob-nav-btn.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 2px;
+    background: var(--gold);
+    border-radius: 0 0 3px 3px;
+  }
+
+  .mob-nav-badge {
+    position: absolute;
+    top: 8px;
+    right: calc(50% - 18px);
+    background: var(--red);
+    color: #fff;
+    font-size: 0.55rem;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+  }
+}
+
 
 
 /* ═══════════════════════════════════════════════════════
