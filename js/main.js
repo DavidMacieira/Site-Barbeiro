@@ -226,6 +226,8 @@ const Calendar = {
               openStart: b.openStart || '09:00',
               openEnd:   b.openEnd   || '19:00'
             });
+          } else if (b.type === 'slot_block' || b.type === 'break_override') {
+            // Bloqueio parcial de slots — não bloqueia o dia inteiro, ignorar aqui
           } else {
             // Bloqueio — pode ser dia único ou período
             if (b.startDate) {
