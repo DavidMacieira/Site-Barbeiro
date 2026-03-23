@@ -56,10 +56,14 @@ async testConnection() {
     }
 
     if (data && data.success) {
-      // Se a API diz que é sucesso, usamos os slots dela (mesmo que vazios)
-      // Se estiver vazio, é porque o dia está fechado ou cheio.
-      console.log(`✅ API retornou ${data.slots?.length ?? 0} slots. Razão: ${data.reason || 'OK'}`);
-      return { success: true, slots: data.slots, reason: data.reason };
+      const slots = data.slots ?? [];
+      console.log(`✅ API retornou ${slots.length} slots. Razão: ${data.reason || 'OK'}`);
+      // Se slots vazios por slot_block no servidor, usar fallback e deixar o cliente filtrar os horários específicos
+      if (slots.length === 0 && (data.reason === 'slot_block' || data.reason === 'blocked_slots')) {
+        console.warn('⚠️ slot_block no servidor, usando fallback para filtro no cliente');
+        return { success: true, slots: this.getFallbackSlots(), fromFallback: true, reason: data.reason };
+      }
+      return { success: true, slots, reason: data.reason };
     }
 
     // API respondeu mas com erro — usar fallback local para não bloquear o utilizador

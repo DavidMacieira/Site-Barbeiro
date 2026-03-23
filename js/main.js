@@ -214,6 +214,7 @@ const Calendar = {
     try {
       // Carregar bloqueios e excepções do servidor
       const blocked = await barbeariaAPI.getBlockedDates();
+      window._allBlockedDates = blocked || []; // cache global para filtro de slots
       if (Array.isArray(blocked)) {
         this.blockedDates = [];    // datas bloqueadas
         this.openExceptions = [];  // dias extra abertos (override dos dias fechados)
@@ -1029,19 +1030,25 @@ async function loadAvailableTimeSlots() {
       return slot;
     });
 
-    // Slots bloqueados manualmente pelo barbeiro (guardados em localStorage)
-    // Nota: esta chave é lida pelo frontend do admin e escrita pelo admin.js
-    const adminBlocked = (() => {
+    // Slots bloqueados manualmente pelo barbeiro (vindos do servidor via slot_block)
+    const slotBlockEntry = (typeof blockedDatesCache !== 'undefined'
+      ? blockedDatesCache
+      : (window.app?.blockedDates ? [] : [])
+    );
+    // Ler do cache global de bloqueios carregado no init()
+    const adminBlockedFromServer = (() => {
       try {
-        const raw = localStorage.getItem(`slots_${date}`);
-        return raw ? (JSON.parse(raw).blocked || []) : [];
+        if (!Array.isArray(window._allBlockedDates)) return [];
+        const entry = window._allBlockedDates.find(b => b.type === 'slot_block' && b.startDate === date);
+        if (!entry || !entry.slots) return [];
+        return entry.slots.split(',').map(s => s.trim()).filter(Boolean);
       } catch { return []; }
     })();
 
     // Marcar slots bloqueados pelo admin como indisponíveis
-    if (adminBlocked.length > 0) {
+    if (adminBlockedFromServer.length > 0) {
       slots = slots.map(slot => {
-        if (adminBlocked.includes(slot.time)) {
+        if (adminBlockedFromServer.includes(slot.time)) {
           return { ...slot, available: false };
         }
         return slot;
