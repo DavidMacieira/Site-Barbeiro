@@ -488,8 +488,11 @@ function getDayStatus(dateStr) {
   for (const b of blockedDatesCache) {
     if (b.type === 'open_exception') {
       if (b.startDate === dateStr) return { status: 'open_exception', ...b };
+    } else if (b.type === 'slot_block' || b.type === 'break_override') {
+      // Bloqueio parcial de slots — não bloqueia o dia inteiro, ignorar aqui
+      continue;
     } else {
-      // bloqueio
+      // bloqueio de dia completo
       if (b.startDate === dateStr) return { status: 'blocked', ...b };
       if (b.endDate && b.startDate <= dateStr && dateStr <= b.endDate) {
         return { status: 'blocked', ...b };
