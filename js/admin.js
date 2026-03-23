@@ -607,13 +607,20 @@ function renderBlockedList(dates) {
   const el = document.getElementById('blockedList');
   if (!el) return;
 
-  if (!dates || dates.length === 0) {
+  // Filtrar: esconder slot_block (internos) e entradas com datas inválidas (ex: "1899")
+  const visible = (dates || []).filter(d => {
+    if (d.type === 'slot_block') return false; // bloqueios de horários — não aparecem aqui
+    if (!d.startDate || d.startDate.includes('1899') || d.startDate.includes('Dec')) return false;
+    return true;
+  });
+
+  if (visible.length === 0) {
     el.innerHTML = `<p style="color:var(--white-dim);font-size:0.85rem;">Nenhuma excepção definida.</p>`;
     return;
   }
 
   // Ordenar por data
-  const sorted = [...dates].sort((a, b) => (a.startDate || '') > (b.startDate || '') ? 1 : -1);
+  const sorted = [...visible].sort((a, b) => (a.startDate || '') > (b.startDate || '') ? 1 : -1);
 
   el.innerHTML = sorted.map(d => {
     const isOpen    = d.type === 'open_exception';
@@ -646,6 +653,24 @@ function renderBlockedList(dates) {
       </button>
     </div>`;
   }).join('');
+}
+
+async function cleanInvalidBlockedDates() {
+  if (!confirm('Isto vai remover todas as entradas inválidas (datas "1899") e duplicados de "Dia Extra". Continuar?')) return;
+  const all = await barbeariaAPI.getBlockedDates().catch(() => []);
+  const toRemove = (all || []).filter(d => {
+    if (!d.startDate || d.startDate.includes('1899') || d.startDate.includes('Dec')) return true;
+    return false;
+  });
+  if (toRemove.length === 0) { toast('Nenhuma entrada inválida encontrada', 'info'); return; }
+  let removed = 0;
+  for (const d of toRemove) {
+    const r = await barbeariaAPI.removeBlockedDate(d.id).catch(() => null);
+    if (r?.success) removed++;
+  }
+  toast(`${removed} entradas inválidas removidas!`, 'success');
+  await loadBlockedDates();
+  renderCalendar();
 }
 
 // ════════════════════════════════════════════════════════════════
