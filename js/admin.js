@@ -486,11 +486,11 @@ function clearManualForm() {
 // Devolve { status: 'normal'|'blocked'|'open_exception', description, ... }
 function getDayStatus(dateStr) {
   for (const b of blockedDatesCache) {
+    if (b.type === 'slot_block' || b.type === 'break_override') {
+      continue; // bloqueio parcial de slots — não bloqueia o dia inteiro
+    }
     if (b.type === 'open_exception') {
       if (b.startDate === dateStr) return { status: 'open_exception', ...b };
-    } else if (b.type === 'slot_block' || b.type === 'break_override') {
-      // Bloqueio parcial de slots — não bloqueia o dia inteiro, ignorar aqui
-      continue;
     } else {
       // bloqueio de dia completo
       if (b.startDate === dateStr) return { status: 'blocked', ...b };
@@ -609,7 +609,7 @@ function renderBlockedList(dates) {
 
   // Filtrar: esconder slot_block (internos) e entradas com datas inválidas (ex: "1899")
   const visible = (dates || []).filter(d => {
-    if (d.type === 'slot_block') return false; // bloqueios de horários — não aparecem aqui
+    if (d.type === 'slot_block') return false;
     if (!d.startDate || d.startDate.includes('1899') || d.startDate.includes('Dec')) return false;
     return true;
   });
@@ -656,19 +656,18 @@ function renderBlockedList(dates) {
 }
 
 async function cleanInvalidBlockedDates() {
-  if (!confirm('Isto vai remover todas as entradas inválidas (datas "1899") e duplicados de "Dia Extra". Continuar?')) return;
+  if (!confirm('Isto vai remover todas as entradas inválidas (datas "1899") da lista. Continuar?')) return;
   const all = await barbeariaAPI.getBlockedDates().catch(() => []);
-  const toRemove = (all || []).filter(d => {
-    if (!d.startDate || d.startDate.includes('1899') || d.startDate.includes('Dec')) return true;
-    return false;
-  });
+  const toRemove = (all || []).filter(d =>
+    !d.startDate || d.startDate.includes('1899') || d.startDate.includes('Dec')
+  );
   if (toRemove.length === 0) { toast('Nenhuma entrada inválida encontrada', 'info'); return; }
   let removed = 0;
   for (const d of toRemove) {
     const r = await barbeariaAPI.removeBlockedDate(d.id).catch(() => null);
     if (r?.success) removed++;
   }
-  toast(`${removed} entradas inválidas removidas!`, 'success');
+  toast(`${removed} entrada(s) inválida(s) removida(s)!`, 'success');
   await loadBlockedDates();
   renderCalendar();
 }

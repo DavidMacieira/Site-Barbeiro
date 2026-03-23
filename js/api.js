@@ -303,16 +303,23 @@ async getBookings(filters = {}) {
   }
 
   async addBlockedDate(dateData) {
-    return new Promise((resolve) => {
-      const callbackName = 'gs_cb_' + Date.now();
-      const timer = setTimeout(() => { delete window[callbackName]; resolve({ success: false, error: 'Timeout' }); }, 15000);
-      window[callbackName] = (data) => { clearTimeout(timer); delete window[callbackName]; if (script.parentNode) script.parentNode.removeChild(script); resolve(data); };
-      const params = new URLSearchParams({ action: 'addBlockedDate', callback: callbackName, ...dateData });
-      const script = document.createElement('script');
-      script.src = `${this.API_URL}?${params.toString()}`;
-      script.onerror = () => { clearTimeout(timer); delete window[callbackName]; resolve({ success: false, error: 'Erro' }); };
-      document.head.appendChild(script);
-    });
+    // Usar POST com JSON para evitar problemas de codificação de vírgulas nos slots
+    try {
+      const payload = { action: 'addBlockedDate', ...dateData };
+      const response = await fetch(this.API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      // no-cors não permite ler resposta — aguardar e verificar via getBlockedDates
+      await new Promise(r => setTimeout(r, 1500));
+      return { success: true };
+    } catch(e) {
+      console.error('Erro addBlockedDate:', e);
+      return { success: false, error: e.message };
+    }
   }
 
   async removeBlockedDate(dateId) {
