@@ -649,9 +649,8 @@ function renderBlockedList(dates) {
 //  GESTÃO DE SLOTS POR DIA
 // ════════════════════════════════════════════════════════════════
 
-// Slots personalizados guardados em localStorage (key: "slots_YYYY-MM-DD")
-// Cada entrada: { blocked: ['09:00','09:30',...] }  — lista dos bloqueados
-// Se não existir entrada, todos os slots normais estão disponíveis.
+// Slots personalizados guardados no servidor via addBlockedDate (type: 'slot_block')
+// Cada registo: { type: 'slot_block', startDate: 'YYYY-MM-DD', slots: '09:00,09:30,...' }
 
 function getSettingsHours() {
   const open  = document.getElementById('cfgOpen')?.value  || '09:00';
@@ -681,16 +680,33 @@ function generateAllSlots(open = '09:00', close = '19:00', step = 30) {
   return slots;
 }
 
+// Lê os slots bloqueados para um dia a partir do cache já carregado do servidor
 function getDayBlockedSlots(dateStr) {
-  try {
-    const raw = localStorage.getItem(`slots_${dateStr}`);
-    if (!raw) return [];
-    return JSON.parse(raw).blocked || [];
-  } catch { return []; }
+  const entry = blockedDatesCache.find(b => b.type === 'slot_block' && b.startDate === dateStr);
+  if (!entry || !entry.slots) return [];
+  return entry.slots.split(',').map(s => s.trim()).filter(Boolean);
 }
 
-function saveDayBlockedSlots(dateStr, blockedSlots) {
-  localStorage.setItem(`slots_${dateStr}`, JSON.stringify({ blocked: blockedSlots }));
+// Guarda os slots bloqueados de um dia no servidor
+// Remove o registo anterior (se existir) e cria um novo
+async function saveDayBlockedSlots(dateStr, blockedSlots) {
+  // Remover registo anterior deste dia, se existir
+  const existing = blockedDatesCache.find(b => b.type === 'slot_block' && b.startDate === dateStr);
+  if (existing?.id) {
+    await barbeariaAPI.removeBlockedDate(existing.id).catch(() => null);
+  }
+
+  // Se não há slots bloqueados, não precisamos de criar registo
+  if (blockedSlots.length === 0) return { success: true };
+
+  // Criar novo registo no servidor
+  const payload = {
+    description: `Slots bloqueados`,
+    startDate:   dateStr,
+    type:        'slot_block',
+    slots:       blockedSlots.join(',')
+  };
+  return barbeariaAPI.addBlockedDate(payload).catch(() => ({ success: false }));
 }
 
 async function loadDaySlots() {
@@ -811,7 +827,7 @@ function clearAllSlots() {
   });
 }
 
-function saveDaySlots() {
+async function saveDaySlots() {
   const dateStr = document.getElementById('slotDate')?.value;
   if (!dateStr) { toast('Escolha uma data', 'error'); return; }
 
@@ -822,22 +838,33 @@ function saveDaySlots() {
     }
   });
 
-  saveDayBlockedSlots(dateStr, blocked);
-  toast('Horários guardados!', 'success');
+  toast('A guardar...', 'info');
+  const result = await saveDayBlockedSlots(dateStr, blocked);
 
-  // Flash da mensagem de confirmação
-  const msg = document.getElementById('slotsSaveMsg');
-  if (msg) {
-    msg.style.display = 'block';
-    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+  if (result?.success !== false) {
+    await loadBlockedDates();
+    toast('Horários guardados!', 'success');
+    const msg = document.getElementById('slotsSaveMsg');
+    if (msg) {
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 3000);
+    }
+  } else {
+    toast('Erro ao guardar horários no servidor', 'error');
   }
 }
 
-function resetDaySlots() {
+async function resetDaySlots() {
   const dateStr = document.getElementById('slotDate')?.value;
   if (!dateStr) return;
   if (!confirm('Repor horários padrão para este dia?')) return;
-  localStorage.removeItem(`slots_${dateStr}`);
+
+  // Remover registo do servidor se existir
+  const existing = blockedDatesCache.find(b => b.type === 'slot_block' && b.startDate === dateStr);
+  if (existing?.id) {
+    await barbeariaAPI.removeBlockedDate(existing.id).catch(() => null);
+    await loadBlockedDates();
+  }
   loadDaySlots();
   toast('Horários repostos ao padrão', 'info');
 }
